@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/app_theme.dart';
-import '../core/csv_export.dart';
 import '../core/format.dart';
+import '../core/pdf_report.dart';
 import '../core/ui_kit.dart';
 import '../core/widgets.dart';
 import '../services/data_service.dart';
@@ -271,6 +271,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
   late String _range = widget.initialRange;
   ReportData? _report;
   bool _loading = true;
+  bool _exporting = false;
 
   @override
   void initState() {
@@ -293,33 +294,35 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
     }
   }
 
-  Future<void> _exportCsv() async {
-    final items = _report?.items ?? [];
-    if (items.isEmpty) {
+  Future<void> _exportPdf() async {
+    if (_exporting) return;
+    final rep = _report;
+    if (rep == null || rep.items.isEmpty) {
       showWarning(context, 'Belum ada data transaksi untuk diunduh', top: 72);
       return;
     }
-    final buf = StringBuffer(
-        'Tanggal,Produk,Kategori,Kuantitas,Harga Satuan,Total,Kasir\n');
-    for (final it in items) {
-      buf.writeln(
-          '"${_fmtTxDate(it.createdAt)}","${it.productName}","${it.kategori}",${Fmt.plain(it.kuantitas)},${it.hargaSatuan.round()},${it.total.round()},"${it.kasir}"');
-    }
-    final now = DateTime.now();
-    final stamp =
-        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
-    final fileName = 'laporan_labaku_${_range}_$stamp.csv';
+    final rangeLabel = _ranges
+        .firstWhere((e) => e.$1 == _range, orElse: () => ('today', 'Hari ini'))
+        .$2;
+    setState(() => _exporting = true);
     try {
-      await exportCsvFile(fileName, buf.toString());
+      await exportReportPdf(
+        report: rep,
+        rangeKey: _range,
+        rangeLabel: rangeLabel,
+        home: DataService.instance.home,
+      );
       if (!mounted) return;
+      setState(() => _exporting = false);
       await showResultDialog(
         context,
-        title: 'Laporan Terunduh',
-        message: 'File $fileName berhasil dibuat dan siap dibuka.',
+        title: 'Laporan PDF Siap',
+        message: 'Laporan keuangan PDF berhasil dibuat dan siap disimpan atau dibagikan.',
       );
     } catch (_) {
       if (mounted) {
-        showWarning(context, 'Gagal mengunduh laporan CSV', top: 72);
+        setState(() => _exporting = false);
+        showWarning(context, 'Gagal membuat laporan PDF, coba lagi ya', top: 72);
       }
     }
   }
@@ -382,7 +385,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
-                        onTap: _exportCsv,
+                        onTap: _exportPdf,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
@@ -390,17 +393,31 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                             color: AppColors.blue,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.file_download_outlined,
-                                  size: 18, color: AppColors.white),
-                              SizedBox(width: 6),
-                              Text('Unduh Laporan',
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.white)),
+                              if (_exporting)
+                                const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.white,
+                                  ),
+                                )
+                              else
+                                const Icon(Icons.picture_as_pdf_rounded,
+                                    size: 18, color: AppColors.white),
+                              const SizedBox(width: 6),
+                              Text(
+                                _exporting
+                                    ? 'Menyiapkan PDF...'
+                                    : 'Unduh Laporan PDF',
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.white),
+                              ),
                             ],
                           ),
                         ),

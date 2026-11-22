@@ -16,6 +16,8 @@ dependencies:
   path_provider: ^2.1.4
   share_plus: ^10.1.4
   web: ^1.1.0
+  pdf: ^3.11.1
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

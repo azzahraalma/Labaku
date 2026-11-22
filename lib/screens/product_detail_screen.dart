@@ -66,239 +66,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _editStock(ProductSummary s) async {
-    final ctrl = TextEditingController();
-    String mode = 'add'; // 'add' | 'set'
-    bool saving = false;
     final ok = await showAppDialog<bool>(
       context,
-      (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AppDialogCard(
-          padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DialogTitleRow(
-                title: 'Kelola Stok',
-                onClose: () => Navigator.of(ctx, rootNavigator: true).pop(false),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Stok saat ini: ${Fmt.plain(s.sisaStok)} ${s.unit}',
-                style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.blue),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setS(() => mode = 'add'),
-                      child: Container(
-                        height: 36,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: mode == 'add'
-                              ? AppColors.blue
-                              : UiColors.blueTint,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '+ Tambah Stok',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: mode == 'add'
-                                ? AppColors.white
-                                : AppColors.blue,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setS(() => mode = 'set'),
-                      child: Container(
-                        height: 36,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: mode == 'set'
-                              ? AppColors.blue
-                              : UiColors.blueTint,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'Atur Stok',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: mode == 'set'
-                                ? AppColors.white
-                                : AppColors.blue,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                mode == 'add'
-                    ? 'Jumlah stok tambahan (${s.unit})'
-                    : 'Jumlah stok aktual baru (${s.unit})',
-                style: const TextStyle(fontSize: 13, color: AppColors.black),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.blue),
-                ),
-                child: TextField(
-                  controller: ctrl,
-                  onChanged: (_) => setS(() {}),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                  ],
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: mode == 'add'
-                        ? 'Contoh: ${Fmt.plain(s.jumlahProduksi)}'
-                        : 'Contoh: 20',
-                    hintStyle: const TextStyle(color: UiColors.textMute),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              if (mode == 'add' && s.jumlahProduksi > 0) ...[
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    GestureDetector(
-                      onTap: () => setS(() {
-                        ctrl.text = Fmt.plain(s.jumlahProduksi);
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: UiColors.blueTint,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.blue, width: 0.8),
-                        ),
-                        child: Text(
-                          '+1x Produksi (${Fmt.plain(s.jumlahProduksi)} ${s.unit})',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.blue,
-                          ),
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => setS(() {
-                        ctrl.text = Fmt.plain(s.jumlahProduksi * 2);
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: UiColors.blueTint,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.blue, width: 0.8),
-                        ),
-                        child: Text(
-                          '+2x Produksi (${Fmt.plain(s.jumlahProduksi * 2)} ${s.unit})',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.blue,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-              Text(
-                'Menambah atau mengatur stok tidak mengubah modal (HPP) per ${s.unit}.',
-                style: const TextStyle(fontSize: 11.5, color: UiColors.textMute),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppButton(
-                      text: 'Batal',
-                      height: 40,
-                      fontSize: 14,
-                      style: BtnStyle.outline,
-                      onTap: () =>
-                          Navigator.of(ctx, rootNavigator: true).pop(false),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Builder(builder: (_) {
-                      final parsed = double.tryParse(
-                          ctrl.text.trim().replaceAll(',', '.'));
-                      final ready = parsed != null &&
-                          (mode == 'add' ? parsed > 0 : parsed >= 0);
-                      return AppButton(
-                        text: 'Simpan',
-                        height: 40,
-                        fontSize: 14,
-                        loading: saving,
-                        style: ready ? BtnStyle.primary : BtnStyle.disabledSoft,
-                        onTap: () async {
-                          if (!ready) {
-                            showWarning(ctx, 'Lengkapin data nya dulu ya!',
-                                top: 113);
-                            return;
-                          }
-                          setS(() => saving = true);
-                          try {
-                            await DataService.instance.updateProductStock(
-                              productId: s.id,
-                              nilai: parsed,
-                              mode: mode,
-                            );
-                            if (ctx.mounted) {
-                              Navigator.of(ctx, rootNavigator: true).pop(true);
-                            }
-                          } catch (_) {
-                            if (ctx.mounted) {
-                              setS(() => saving = false);
-                              showWarning(ctx, 'Gagal memperbarui stok',
-                                  top: 113);
-                            }
-                          }
-                        },
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+      (_) => _EditStockDialog(summary: s),
       dismissible: true,
     );
-    ctrl.dispose();
     if (ok == true && mounted) {
       await _load();
     }
@@ -1130,6 +902,335 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         const Divider(height: 16, color: AppColors.blue),
         _kv('Total Overhead:', Fmt.rp(s.hppOverhead), bold: true),
       ],
+    );
+  }
+}
+
+class _EditStockDialog extends StatefulWidget {
+  final ProductSummary summary;
+  const _EditStockDialog({required this.summary});
+
+  @override
+  State<_EditStockDialog> createState() => _EditStockDialogState();
+}
+
+class _EditStockDialogState extends State<_EditStockDialog> {
+  final _ctrl = TextEditingController();
+  String _mode = 'add'; // 'add' | 'set'
+  bool _saving = false;
+  String? _warn;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _showInlineWarn(String msg) {
+    setState(() => _warn = msg);
+    Future<void>.delayed(const Duration(seconds: 3), () {
+      if (mounted && _warn == msg) setState(() => _warn = null);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.summary;
+    final parsed = double.tryParse(_ctrl.text.trim().replaceAll(',', '.'));
+    final ready =
+        parsed != null && (_mode == 'add' ? parsed > 0 : parsed >= 0);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_warn != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.redSoft,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error, size: 20, color: Color(0xFFB71C1C)),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      _warn!,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: Color(0xFFB71C1C),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Flexible(
+            child: Material(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(26),
+              clipBehavior: Clip.antiAlias,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DialogTitleRow(
+                      title: 'Kelola Stok',
+                      onClose: () {
+                        FocusScope.of(context).unfocus();
+                        Navigator.of(context, rootNavigator: true).pop(false);
+                      },
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Stok saat ini: ${Fmt.plain(s.sisaStok)} ${s.unit}',
+                      style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.blue),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _mode = 'add'),
+                            child: Container(
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: _mode == 'add'
+                                    ? AppColors.blue
+                                    : UiColors.blueTint,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '+ Tambah Stok',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _mode == 'add'
+                                      ? AppColors.white
+                                      : AppColors.blue,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _mode = 'set'),
+                            child: Container(
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: _mode == 'set'
+                                    ? AppColors.blue
+                                    : UiColors.blueTint,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'Atur Stok',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _mode == 'set'
+                                      ? AppColors.white
+                                      : AppColors.blue,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      _mode == 'add'
+                          ? 'Jumlah stok tambahan (${s.unit})'
+                          : 'Jumlah stok aktual baru (${s.unit})',
+                      style:
+                          const TextStyle(fontSize: 13, color: AppColors.black),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.blue),
+                      ),
+                      child: TextField(
+                        controller: _ctrl,
+                        onChanged: (_) => setState(() => _warn = null),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9.,]')),
+                        ],
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          hintText: _mode == 'add'
+                              ? 'Contoh: ${Fmt.plain(s.jumlahProduksi)}'
+                              : 'Contoh: 20',
+                          hintStyle: const TextStyle(color: UiColors.textMute),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_mode == 'add' && s.jumlahProduksi > 0) ...[
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          GestureDetector(
+                            onTap: () => setState(() {
+                              _ctrl.text = Fmt.plain(s.jumlahProduksi);
+                              _warn = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: UiColors.blueTint,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: AppColors.blue, width: 0.8),
+                              ),
+                              child: Text(
+                                '+1x Produksi (${Fmt.plain(s.jumlahProduksi)} ${s.unit})',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.blue,
+                                ),
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => setState(() {
+                              _ctrl.text = Fmt.plain(s.jumlahProduksi * 2);
+                              _warn = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: UiColors.blueTint,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: AppColors.blue, width: 0.8),
+                              ),
+                              child: Text(
+                                '+2x Produksi (${Fmt.plain(s.jumlahProduksi * 2)} ${s.unit})',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.blue,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 1),
+                          child: Icon(Icons.info_rounded,
+                              size: 16, color: AppColors.blue),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Menambah atau mengatur stok tidak mengubah modal (HPP) per ${s.unit}.',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              height: 1.35,
+                              color: UiColors.textMute,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            text: 'Batal',
+                            height: 40,
+                            fontSize: 14,
+                            style: BtnStyle.outline,
+                            onTap: () {
+                              FocusScope.of(context).unfocus();
+                              Navigator.of(context, rootNavigator: true)
+                                  .pop(false);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: AppButton(
+                            text: 'Simpan',
+                            height: 40,
+                            fontSize: 14,
+                            loading: _saving,
+                            style: ready
+                                ? BtnStyle.primary
+                                : BtnStyle.disabledSoft,
+                            onTap: () async {
+                              if (!ready) {
+                                _showInlineWarn('Lengkapin data nya dulu ya!');
+                                return;
+                              }
+                              FocusScope.of(context).unfocus();
+                              setState(() => _saving = true);
+                              try {
+                                await DataService.instance.updateProductStock(
+                                  productId: s.id,
+                                  nilai: parsed,
+                                  mode: _mode,
+                                );
+                                if (context.mounted) {
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pop(true);
+                                }
+                              } catch (_) {
+                                if (context.mounted) {
+                                  setState(() => _saving = false);
+                                  _showInlineWarn('Gagal memperbarui stok');
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

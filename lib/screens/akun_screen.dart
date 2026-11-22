@@ -836,207 +836,17 @@ class _UbahAkunKaryawanScreenState extends State<UbahAkunKaryawanScreen> {
   }
 
   Future<void> _editTarif() async {
-    final tCtrl =
-        TextEditingController(text: _tarif > 0 ? Fmt.number(_tarif) : '');
-    final qCtrl = TextEditingController(text: '1');
-    var metode = _satuan;
-
-    Widget radioCard(String id, IconData icon, String title, String sub,
-        void Function(void Function()) setSt) {
-      final active = metode == id;
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: GestureDetector(
-          onTap: () => setSt(() => metode = id),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                  color: active ? AppColors.black : AppColors.grey,
-                  width: active ? 1.3 : 1),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 22, color: AppColors.black),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          style: const TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.black)),
-                      Text(sub,
-                          style: const TextStyle(
-                              fontSize: 11, color: UiColors.textMute)),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: active ? AppColors.black : AppColors.grey,
-                        width: 1.5),
-                  ),
-                  alignment: Alignment.center,
-                  child: active
-                      ? Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                              shape: BoxShape.circle, color: AppColors.black),
-                        )
-                      : null,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final ok = await showAppDialog<bool>(
+    final res = await showAppDialog<({double tarif, String satuan})>(
       context,
-      (ctx) => StatefulBuilder(
-        builder: (_, setSt) {
-          final isManual = metode == 'manual';
-          final detailTitle = metode == 'hari'
-              ? 'Detail Tarif per Hari'
-              : metode == 'output'
-                  ? 'Detail Tarif per Output'
-                  : isManual
-                      ? 'Input total biaya'
-                      : 'Detail Tarif per Jam';
-          final qtyUnit = metode == 'hari'
-              ? 'Hari'
-              : metode == 'output'
-                  ? 'pcs'
-                  : 'Jam';
-          final ready = Fmt.parse(tCtrl.text) > 0 &&
-              (isManual || Fmt.parse(qCtrl.text) > 0);
-
-          return AppDialogCard(
-            padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Metode Input',
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: UiColors.textMute)),
-                  const SizedBox(height: 12),
-                  radioCard('jam', Icons.access_time_rounded, 'Tarif per Jam',
-                      'Upah berdasarkan jam kerja', setSt),
-                  radioCard('hari', Icons.calendar_today_outlined,
-                      'Tarif per Hari', 'Upah berdasarkan hari kerja', setSt),
-                  radioCard('output', Icons.calendar_today_outlined,
-                      'Tarif per Output', 'Upah berdasarkan jumlah output', setSt),
-                  radioCard('manual', Icons.edit_outlined, 'Input Manual',
-                      'Input total biaya langsung', setSt),
-                  const SizedBox(height: 6),
-                  Text(detailTitle,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: UiColors.textMute)),
-                  const SizedBox(height: 10),
-                  if (isManual)
-                    OutField(
-                      controller: tCtrl,
-                      height: 44,
-                      radius: 22,
-                      borderColor: AppColors.grey,
-                      prefix: const Text('Rp',
-                          style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.blue)),
-                      hint: 'Total biaya',
-                      keyboard: TextInputType.number,
-                      formatters: [ThousandsFormatter()],
-                      onChanged: (_) => setSt(() {}),
-                    )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutField(
-                            controller: tCtrl,
-                            height: 44,
-                            radius: 22,
-                            borderColor: AppColors.grey,
-                            prefix: const Text('Rp',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.blue)),
-                            hint: '3000',
-                            keyboard: TextInputType.number,
-                            formatters: [ThousandsFormatter()],
-                            onChanged: (_) => setSt(() {}),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutField(
-                            controller: qCtrl,
-                            height: 44,
-                            radius: 22,
-                            borderColor: AppColors.grey,
-                            hint: '1',
-                            textAlign: TextAlign.right,
-                            keyboard: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            formatters: [DecimalFormatter()],
-                            suffix: Text(qtyUnit,
-                                style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.blue)),
-                            onChanged: (_) => setSt(() {}),
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 20),
-                  DialogButtons(
-                    ready: ready,
-                    onCancel: () =>
-                        Navigator.of(ctx, rootNavigator: true).pop(),
-                    onConfirm: () {
-                      if (!ready) {
-                        warnDialog(ctx);
-                        return;
-                      }
-                      Navigator.of(ctx, rootNavigator: true).pop(true);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+      (_) => _EditTarifDialog(initialTarif: _tarif, initialSatuan: _satuan),
       dismissible: true,
     );
-    if (ok == true && mounted) {
+    if (res != null && mounted) {
       setState(() {
-        _tarif = Fmt.parse(tCtrl.text);
-        _satuan = metode;
+        _tarif = res.tarif;
+        _satuan = res.satuan;
       });
     }
-    tCtrl.dispose();
-    qCtrl.dispose();
   }
 
   @override
@@ -1609,6 +1419,219 @@ class _AvatarCircle extends StatelessWidget {
                       size: size * 0.6, color: AppColors.grey))
               : Icon(Icons.person_rounded,
                   size: size * 0.6, color: AppColors.grey),
+    );
+  }
+}
+
+class _EditTarifDialog extends StatefulWidget {
+  final double initialTarif;
+  final String initialSatuan;
+  const _EditTarifDialog({
+    required this.initialTarif,
+    required this.initialSatuan,
+  });
+
+  @override
+  State<_EditTarifDialog> createState() => _EditTarifDialogState();
+}
+
+class _EditTarifDialogState extends State<_EditTarifDialog> {
+  late final _tCtrl = TextEditingController(
+      text: widget.initialTarif > 0 ? Fmt.number(widget.initialTarif) : '');
+  final _qCtrl = TextEditingController(text: '1');
+  late String _metode = widget.initialSatuan;
+
+  @override
+  void dispose() {
+    _tCtrl.dispose();
+    _qCtrl.dispose();
+    super.dispose();
+  }
+
+  Widget _radioCard(String id, IconData icon, String title, String sub) {
+    final active = _metode == id;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: () => setState(() => _metode = id),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+                color: active ? AppColors.black : AppColors.grey,
+                width: active ? 1.3 : 1),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: AppColors.black),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.black)),
+                    Text(sub,
+                        style: const TextStyle(
+                            fontSize: 11, color: UiColors.textMute)),
+                  ],
+                ),
+              ),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: active ? AppColors.black : AppColors.grey,
+                      width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: active
+                    ? Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                            shape: BoxShape.circle, color: AppColors.black),
+                      )
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isManual = _metode == 'manual';
+    final detailTitle = _metode == 'hari'
+        ? 'Detail Tarif per Hari'
+        : _metode == 'output'
+            ? 'Detail Tarif per Output'
+            : isManual
+                ? 'Input total biaya'
+                : 'Detail Tarif per Jam';
+    final qtyUnit = _metode == 'hari'
+        ? 'Hari'
+        : _metode == 'output'
+            ? 'pcs'
+            : 'Jam';
+    final ready =
+        Fmt.parse(_tCtrl.text) > 0 && (isManual || Fmt.parse(_qCtrl.text) > 0);
+
+    return AppDialogCard(
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Metode Input',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: UiColors.textMute)),
+            const SizedBox(height: 12),
+            _radioCard('jam', Icons.access_time_rounded, 'Tarif per Jam',
+                'Upah berdasarkan jam kerja'),
+            _radioCard('hari', Icons.calendar_today_outlined, 'Tarif per Hari',
+                'Upah berdasarkan hari kerja'),
+            _radioCard('output', Icons.calendar_today_outlined,
+                'Tarif per Output', 'Upah berdasarkan jumlah output'),
+            _radioCard('manual', Icons.edit_outlined, 'Input Manual',
+                'Input total biaya langsung'),
+            const SizedBox(height: 6),
+            Text(detailTitle,
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: UiColors.textMute)),
+            const SizedBox(height: 10),
+            if (isManual)
+              OutField(
+                controller: _tCtrl,
+                height: 44,
+                radius: 22,
+                borderColor: AppColors.grey,
+                prefix: const Text('Rp',
+                    style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.blue)),
+                hint: 'Total biaya',
+                keyboard: TextInputType.number,
+                formatters: [ThousandsFormatter()],
+                onChanged: (_) => setState(() {}),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutField(
+                      controller: _tCtrl,
+                      height: 44,
+                      radius: 22,
+                      borderColor: AppColors.grey,
+                      prefix: const Text('Rp',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.blue)),
+                      hint: '3000',
+                      keyboard: TextInputType.number,
+                      formatters: [ThousandsFormatter()],
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutField(
+                      controller: _qCtrl,
+                      height: 44,
+                      radius: 22,
+                      borderColor: AppColors.grey,
+                      hint: '1',
+                      textAlign: TextAlign.right,
+                      keyboard: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      formatters: [DecimalFormatter()],
+                      suffix: Text(qtyUnit,
+                          style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.blue)),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 20),
+            DialogButtons(
+              ready: ready,
+              onCancel: () {
+                FocusScope.of(context).unfocus();
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+              onConfirm: () {
+                if (!ready) {
+                  warnDialog(context);
+                  return;
+                }
+                FocusScope.of(context).unfocus();
+                Navigator.of(context, rootNavigator: true)
+                    .pop((tarif: Fmt.parse(_tCtrl.text), satuan: _metode));
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

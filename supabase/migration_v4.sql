@@ -676,8 +676,96 @@ begin
         from public.product_overheads where product_id = p_id), '[]'::jsonb));
 end $$;
 
+-- ---------- 6g. Laporan lengkap (harga normal, diskon, HPP/unit, & laba untuk PDF) ----------
+create or replace function public.get_report(p_token text, p_range text default 'today') returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  a record;
+  v_start timestamptz;
+  v_tx int;
+  v_rev numeric;
+  v_profit numeric;
+  v_items jsonb;
+begin
+  select * into a from public._auth(p_token);
+  if a.urole <> 'bos' then raise exception 'forbidden'; end if;
+
+  case lower(coalesce(p_range, 'today'))
+    when 'week'  then v_start := date_trunc('week', now());
+    when 'month' then v_start := date_trunc('month', now());
+    when 'year'  then v_start := date_trunc('year', now());
+    else              v_start := date_trunc('day', now());
+  end case;
+
+  select
+    count(distinct s.id),
+    coalesce(sum(si.kuantitas * si.harga_satuan), 0),
+    coalesce(sum(
+      si.kuantitas * (
+        si.harga_satuan -
+        case when coalesce(p.jumlah_produksi, 0) > 0
+             then coalesce(p.total_hpp, 0) / p.jumlah_produksi
+             else 0 end
+      )
+    ), 0)
+  into v_tx, v_rev, v_profit
+  from public.sales s
+  join public.sale_items si on si.sale_id = s.id
+  left join public.products p on p.id = si.product_id
+  where s.business_id = a.biz and s.created_at >= v_start;
+
+  select coalesce(jsonb_agg(row_obj order by (row_obj->>'created_at') desc), '[]'::jsonb)
+  into v_items
+  from (
+    select jsonb_build_object(
+      'sale_id', s.id,
+      'product_name', coalesce(p.nama, 'Produk'),
+      'kategori', coalesce(c.nama, 'Lainnya'),
+      'kuantitas', si.kuantitas,
+      'harga_normal', case when coalesce(p.jumlah_produksi, 0) > 0
+                           then round(coalesce(p.harga_jual, 0) / p.jumlah_produksi)
+                           else si.harga_satuan end,
+      'diskon_per_unit', greatest(0,
+        (case when coalesce(p.jumlah_produksi, 0) > 0
+              then round(coalesce(p.harga_jual, 0) / p.jumlah_produksi)
+              else si.harga_satuan end) - si.harga_satuan
+      ),
+      'harga_satuan', si.harga_satuan,
+      'hpp_per_unit', case when coalesce(p.jumlah_produksi, 0) > 0
+                           then round(coalesce(p.total_hpp, 0) / p.jumlah_produksi)
+                           else 0 end,
+      'total', si.kuantitas * si.harga_satuan,
+      'laba', si.kuantitas * (
+        si.harga_satuan -
+        case when coalesce(p.jumlah_produksi, 0) > 0
+             then coalesce(p.total_hpp, 0) / p.jumlah_produksi
+             else 0 end
+      ),
+      'kasir', coalesce(pr.username, '-'),
+      'created_at', s.created_at
+    ) as row_obj
+    from public.sales s
+    join public.sale_items si on si.sale_id = s.id
+    left join public.products p on p.id = si.product_id
+    left join public.product_categories c on c.id = p.category_id
+    left join public.profiles pr on pr.id = s.created_by
+    where s.business_id = a.biz and s.created_at >= v_start
+    order by s.created_at desc
+    limit 200
+  ) t;
+
+  return jsonb_build_object(
+    'tx_count', coalesce(v_tx, 0),
+    'pendapatan', coalesce(v_rev, 0),
+    'keuntungan', coalesce(v_profit, 0),
+    'avg_margin', case when v_rev > 0 then round((v_profit / v_rev) * 100, 1) else 0 end,
+    'items', v_items
+  );
+end $$;
+
 grant execute on function public.bootstrap(text) to anon, authenticated;
 grant execute on function public.get_product(text, uuid) to anon, authenticated;
+grant execute on function public.get_report(text, text) to anon, authenticated;
 grant execute on function public.login_check(text, text) to anon, authenticated;
 grant execute on function public.login_user(text, text, text) to anon, authenticated;
 grant execute on function public.reset_pin(text, text, text, text) to anon, authenticated;

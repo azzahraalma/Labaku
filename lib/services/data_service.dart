@@ -303,8 +303,12 @@ class SaleReportItem {
   final String productName;
   final String kategori;
   final double kuantitas;
+  final double hargaNormal;
+  final double diskonPerUnit;
   final double hargaSatuan;
+  final double hppPerUnit;
   final double total;
+  final double laba;
   final String kasir;
   final DateTime createdAt;
   const SaleReportItem({
@@ -312,22 +316,35 @@ class SaleReportItem {
     required this.productName,
     required this.kategori,
     required this.kuantitas,
+    this.hargaNormal = 0,
+    this.diskonPerUnit = 0,
     required this.hargaSatuan,
+    this.hppPerUnit = 0,
     required this.total,
+    this.laba = 0,
     required this.kasir,
     required this.createdAt,
   });
 
-  factory SaleReportItem.from(Map j) => SaleReportItem(
-        saleId: j['sale_id'] as String,
-        productName: (j['product_name'] as String?) ?? 'Produk',
-        kategori: (j['kategori'] as String?) ?? 'Lainnya',
-        kuantitas: _d(j['kuantitas']),
-        hargaSatuan: _d(j['harga_satuan']),
-        total: _d(j['total']),
-        kasir: (j['kasir'] as String?) ?? '-',
-        createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
-      );
+  factory SaleReportItem.from(Map j) {
+    final qty = _d(j['kuantitas']);
+    final harga = _d(j['harga_satuan']);
+    final hpp = _d(j['hpp_per_unit']);
+    return SaleReportItem(
+      saleId: j['sale_id'] as String,
+      productName: (j['product_name'] as String?) ?? 'Produk',
+      kategori: (j['kategori'] as String?) ?? 'Lainnya',
+      kuantitas: qty,
+      hargaNormal: j['harga_normal'] == null ? harga : _d(j['harga_normal']),
+      diskonPerUnit: _d(j['diskon_per_unit']),
+      hargaSatuan: harga,
+      hppPerUnit: hpp,
+      total: _d(j['total']),
+      laba: j['laba'] == null ? qty * (harga - hpp) : _d(j['laba']),
+      kasir: (j['kasir'] as String?) ?? '-',
+      createdAt: DateTime.parse(j['created_at'] as String).toLocal(),
+    );
+  }
 }
 
 class ReportData {
