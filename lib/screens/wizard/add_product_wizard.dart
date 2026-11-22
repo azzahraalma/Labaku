@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/calc.dart';
 import '../../core/ui_kit.dart';
 import '../../core/widgets.dart';
+import '../../services/auth_service.dart';
 import '../../services/data_service.dart';
 import 'draft.dart';
 import 'steps_1_to_3.dart';
@@ -47,6 +48,7 @@ class _AddProductWizardState extends State<AddProductWizard> {
     final s = ed.summary;
 
     _draft.nama = s.nama;
+    _draft.existingFotoUrl = s.fotoUrl;
     _draft.jumlah = s.jumlahProduksi;
     _draft.category =
         ds.categories.where((c) => c.id == s.categoryId).firstOrNull ??
@@ -76,18 +78,36 @@ class _AddProductWizardState extends State<AddProductWizard> {
     }
 
     // Tenaga kerja
+    final bosId = AuthService.instance.userId;
+    final bosName = ds.home?.username;
     for (final l in ed.labors) {
-      final eid = (l['employee_id'] as String?) ??
-          ds.employees.where((x) => x.username == l['nama']).firstOrNull?.id ??
+      final nama = (l['nama'] as String?) ?? '';
+      var eid = (l['employee_id'] as String?) ??
+          ds.employees.where((x) => x.username == nama).firstOrNull?.id ??
           '';
+      if (eid.isEmpty &&
+          bosId != null &&
+          bosName != null &&
+          nama.trim() == bosName.trim()) {
+        eid = bosId;
+      }
       if (eid.isEmpty) continue;
+      final isBosSelf = (bosId != null && eid == bosId) ||
+          (bosName != null && nama.trim() == bosName.trim());
       _draft.labors.add(LaborLine(
         employeeId: eid,
-        name: (l['nama'] as String?) ?? '',
+        name: isBosSelf
+            ? '${nama.isNotEmpty ? nama : (bosName ?? 'Pemilik')} (Saya)'
+            : nama,
         metode: (l['metode'] as String?) ?? 'jam',
         qty: (l['qty'] as num?)?.toDouble() ?? 1,
         tarif: (l['tarif'] as num?)?.toDouble() ?? 0,
       ));
+    }
+    if ((bosId != null && _draft.labors.any((l) => l.employeeId == bosId)) ||
+        _draft.labors.any((l) => l.name.endsWith('(Saya)'))) {
+      _draft.selfWorker = true;
+      _draft.selfIncludeCost = true;
     }
 
     // Overhead

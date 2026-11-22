@@ -346,39 +346,38 @@ class PhotoPicker extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: size + 16,
-        height: size + 8,
+        width: size,
+        height: size,
         child: Stack(
           children: [
-            Positioned(
-              left: 0,
-              bottom: 0,
-              child: Container(
-                width: size,
-                height: size,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: bg),
-                child: bytes != null
-                    ? Image.memory(bytes!,
-                        fit: BoxFit.cover, gaplessPlayback: true)
-                    : Center(
-                        child: Icon(
-                          icon,
-                          size: size * 0.52,
-                          color: const Color(0xFF666666),
-                        ),
+            Container(
+              width: size,
+              height: size,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: bg),
+              child: bytes != null
+                  ? Image.memory(bytes!,
+                      fit: BoxFit.cover, gaplessPlayback: true)
+                  : Center(
+                      child: Icon(
+                        icon,
+                        size: size * 0.52,
+                        color: const Color(0xFF666666),
                       ),
-              ),
+                    ),
             ),
             Positioned(
-              right: 0,
-              top: 0,
+              right: 2,
+              bottom: 2,
               child: Container(
-                width: 25,
-                height: 25,
-                decoration: const BoxDecoration(
-                    shape: BoxShape.circle, color: AppColors.blue),
-                child: const Icon(Icons.add, size: 18, color: AppColors.white),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.blue,
+                  border: Border.all(color: AppColors.white, width: 2),
+                ),
+                child: const Icon(Icons.add, size: 17, color: AppColors.white),
               ),
             ),
           ],
@@ -717,12 +716,13 @@ class _CustomCategoryDialogState extends State<CustomCategoryDialog> {
               style: TextStyle(fontSize: 14.5, color: Colors.black)),
           const SizedBox(height: 10),
           Container(
-            height: 62,
+            height: 52,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.grey)),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Icon(Icons.grid_view_rounded,
                     size: 20, color: AppColors.black),
@@ -731,8 +731,8 @@ class _CustomCategoryDialogState extends State<CustomCategoryDialog> {
                   child: TextField(
                     controller: _c,
                     onChanged: (_) => setState(() {}),
-                    maxLines: 2,
-                    minLines: 1,
+                    maxLines: 1,
+                    textAlignVertical: TextAlignVertical.center,
                     textInputAction: TextInputAction.done,
                     style: const TextStyle(
                         fontSize: 15,
@@ -741,7 +741,7 @@ class _CustomCategoryDialogState extends State<CustomCategoryDialog> {
                     decoration: const InputDecoration(
                       isCollapsed: true,
                       border: InputBorder.none,
-                      hintText: 'Contoh:\nKerajinan',
+                      hintText: 'Contoh: Kerajinan',
                       hintStyle: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
@@ -772,10 +772,13 @@ class _CustomCategoryDialogState extends State<CustomCategoryDialog> {
                 fontSize: 14,
                 style: _ok ? BtnStyle.primary : BtnStyle.disabledSoft,
                 onTap: () {
-                  if (_ok) {
-                    Navigator.of(context, rootNavigator: true)
-                        .pop(_c.text.trim());
+                  if (!_ok) {
+                    showWarning(context, 'Lengkapin data nya dulu ya!',
+                        top: 113);
+                    return;
                   }
+                  Navigator.of(context, rootNavigator: true)
+                      .pop(_c.text.trim());
                 },
               ),
             ],

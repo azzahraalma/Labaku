@@ -51,13 +51,13 @@ class AuthHeader extends StatelessWidget {
                         height: 1.15,
                         fontWeight: FontWeight.w800,
                         color: AppColors.yellow)),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 const Text(
                   'Daftar atau masuk untuk\nmengakses fitur - fitur dalam aplikasi',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontSize: 13.5,
-                      height: 1.35,
+                      fontSize: 15.5,
+                      height: 1.55,
                       fontWeight: FontWeight.w600,
                       color: AppColors.white),
                 ),

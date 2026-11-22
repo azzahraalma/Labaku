@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../core/app_theme.dart';
 import '../core/format.dart';
+import '../core/offline_screen.dart';
 import '../core/ui_kit.dart';
 import '../core/widgets.dart';
 import '../services/auth_service.dart';
@@ -72,42 +73,44 @@ class _HomeScreenState extends State<HomeScreen> {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
 
     if (_ds.home != null && !_ds.home!.isBos) {
-      return KaryawanHomeScreen(onLogout: _logout);
+      return OfflineGuard(child: KaryawanHomeScreen(onLogout: _logout));
     }
 
-    return Scaffold(
-      backgroundColor: UiColors.page,
-      body: PageBg(
-        child: SafeArea(
-          bottom: false,
-          child: IndexedStack(
-            index: _tab,
-            children: [
-              _BerandaTab(
-                ds: _ds,
-                onTapUser: () => setState(() => _tab = 3),
-                onAddProduct: _openAddProduct,
-                onEditBusiness: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const UsahaSayaScreen()),
+    return OfflineGuard(
+      child: Scaffold(
+        backgroundColor: UiColors.page,
+        body: PageBg(
+          child: SafeArea(
+            bottom: false,
+            child: IndexedStack(
+              index: _tab,
+              children: [
+                _BerandaTab(
+                  ds: _ds,
+                  onTapUser: () => setState(() => _tab = 3),
+                  onAddProduct: _openAddProduct,
+                  onEditBusiness: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const UsahaSayaScreen()),
+                  ),
+                  onSeeAll: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const AllProductsScreen()),
+                    );
+                    _ds.load();
+                  },
                 ),
-                onSeeAll: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const AllProductsScreen()),
-                  );
-                  _ds.load();
-                },
-              ),
-              ProdukTab(onAddProduct: _openAddProduct),
-              const LaporanTab(),
-              AkunTab(onLogout: _logout),
-            ],
+                ProdukTab(onAddProduct: _openAddProduct),
+                const LaporanTab(),
+                AkunTab(onLogout: _logout),
+              ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: _BottomNav(
-        index: _tab,
-        onTap: (i) => setState(() => _tab = i),
+        bottomNavigationBar: _BottomNav(
+          index: _tab,
+          onTap: (i) => setState(() => _tab = i),
+        ),
       ),
     );
   }
@@ -445,8 +448,8 @@ class _BerandaTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // Isi Aktivitas terakhir
-            if (recent == null)
+            // Isi Aktivitas terakhir (maksimal 10 produk terbaru)
+            if (h == null || h.recentList.isEmpty)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
@@ -490,16 +493,20 @@ class _BerandaTab extends StatelessWidget {
                 ),
               )
             else
-              ProductCard(
-                product: recent,
-                onTap: () async {
-                  final changed = await Navigator.of(context).push<bool>(
-                    MaterialPageRoute(
-                        builder: (_) => ProductDetailScreen(summary: recent)),
-                  );
-                  if (changed == true) ds.load();
-                },
-              ),
+              for (final item in h.recentList.take(10))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: ProductCard(
+                    product: item,
+                    onTap: () async {
+                      final changed = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                            builder: (_) => ProductDetailScreen(summary: item)),
+                      );
+                      if (changed == true) ds.load();
+                    },
+                  ),
+                ),
           ],
         ),
       ),

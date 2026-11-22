@@ -8,6 +8,7 @@ import '../../core/calc.dart';
 import '../../core/format.dart';
 import '../../core/ui_kit.dart';
 import '../../core/widgets.dart';
+import '../../services/auth_service.dart';
 import '../../services/data_service.dart';
 import 'wizard_dialogs.dart';
 
@@ -180,17 +181,20 @@ class _LaborDialogState extends State<LaborDialog> {
     final t = Fmt.parse(_tarif.text);
     final q = _metode == 'manual' ? 1.0 : Fmt.parse(_qty.text);
 
-    // Sinkronkan tarif & satuan_tarif ke akun karyawan di database (halaman Karyawan)
-    setState(() => _busy = true);
-    try {
-      await _ds.updateEmployee(
-        empId: _selectedEmp!.id,
-        username: _selectedEmp!.username,
-        tarif: t,
-        satuanTarif: _metode,
-      );
-    } catch (_) {
-      // Tetap lanjutkan agar alur tambah produk tidak terhambat
+    // Sinkronkan tarif & satuan_tarif ke akun karyawan di database (kecuali jika pemilik sendiri)
+    final isSelfBos = _selectedEmp!.id == AuthService.instance.userId;
+    if (!isSelfBos) {
+      setState(() => _busy = true);
+      try {
+        await _ds.updateEmployee(
+          empId: _selectedEmp!.id,
+          username: _selectedEmp!.username,
+          tarif: t,
+          satuanTarif: _metode,
+        );
+      } catch (_) {
+        // Tetap lanjutkan agar alur tambah produk tidak terhambat
+      }
     }
     if (!mounted) return;
     closeDialog(
@@ -245,6 +249,12 @@ class _LaborDialogState extends State<LaborDialog> {
                 onTap: () => setState(() {
                   _selectedEmp = emp;
                   _nama.text = emp.username;
+                  _metode = emp.satuanTarif.isNotEmpty ? emp.satuanTarif : 'jam';
+                  if (emp.tarif > 0) {
+                    _tarif.text = Fmt.number(emp.tarif);
+                  } else {
+                    _tarif.clear();
+                  }
                   _step = 1;
                 }),
                 child: Container(
@@ -260,11 +270,24 @@ class _LaborDialogState extends State<LaborDialog> {
                           size: 40, bg: UiColors.blueTint, fg: AppColors.blue),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(emp.username,
-                            style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.black)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(emp.username,
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.black)),
+                            if (emp.tarif > 0)
+                              Text(
+                                emp.satuanTarif == 'manual'
+                                    ? '${Fmt.rp(emp.tarif)} (Manual)'
+                                    : '${Fmt.rp(emp.tarif)}/${emp.satuanTarif}',
+                                style: const TextStyle(
+                                    fontSize: 12, color: UiColors.textMute),
+                              ),
+                          ],
+                        ),
                       ),
                       const Icon(Icons.chevron_right_rounded,
                           size: 22, color: AppColors.blue),

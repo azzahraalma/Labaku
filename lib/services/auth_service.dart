@@ -64,6 +64,7 @@ class AuthService {
   String? _pendingUserId;
   String? _token;
 
+  String? get userId => _userId;
   String? get token => _token;
 
   bool unlocked = false;

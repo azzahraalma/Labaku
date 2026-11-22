@@ -4,10 +4,59 @@
 -- =====================================================================
 create extension if not exists pgcrypto with schema extensions;
 
--- ---------- 1. Kolom diskon produk (persen / nominal) ----------
+-- ---------- 1. Kolom diskon produk (persen / nominal) & stok aktual ----------
 alter table public.products
   add column if not exists diskon_mode  text,      -- 'persen' | 'nominal' | null
-  add column if not exists diskon_nilai numeric default 0;
+  add column if not exists diskon_nilai numeric default 0,
+  add column if not exists stok         numeric;
+
+-- Backfill stok aktual untuk produk yang sudah ada (jumlah_produksi - total terjual)
+update public.products p
+set stok = greatest(
+  0,
+  coalesce(p.jumlah_produksi, 0) - coalesce((
+    select sum(si.kuantitas) from public.sale_items si where si.product_id = p.id
+  ), 0)
+)
+where p.stok is null;
+
+-- Backfill tarif & satuan_tarif karyawan yang masih 0 dari data product_labors terbaru
+update public.profiles pr
+set
+  tarif = latest.tarif_snapshot,
+  satuan_tarif = coalesce(nullif(latest.metode, ''), 'jam')
+from (
+  select distinct on (pl.employee_id)
+    pl.employee_id,
+    pl.tarif_snapshot,
+    pl.metode
+  from public.product_labors pl
+  join public.products p on p.id = pl.product_id
+  where coalesce(pl.tarif_snapshot, 0) > 0
+  order by pl.employee_id, p.created_at desc
+) latest
+where pr.id = latest.employee_id
+  and pr.role = 'karyawan'
+  and coalesce(pr.tarif, 0) = 0;
+
+-- ---------- 1b. Storage RLS policy lengkap (SELECT + INSERT + UPDATE) untuk upload foto profil/logo ----------
+insert into storage.buckets (id, name, public) values
+  ('avatars', 'avatars', true),
+  ('logos', 'logos', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "labaku_public_select" on storage.objects;
+create policy "labaku_public_select" on storage.objects for select to anon, authenticated
+  using (bucket_id in ('avatars', 'logos'));
+
+drop policy if exists "labaku_public_upload" on storage.objects;
+create policy "labaku_public_upload" on storage.objects for insert to anon, authenticated
+  with check (bucket_id in ('avatars', 'logos'));
+
+drop policy if exists "labaku_public_update" on storage.objects;
+create policy "labaku_public_update" on storage.objects for update to anon, authenticated
+  using (bucket_id in ('avatars', 'logos'))
+  with check (bucket_id in ('avatars', 'logos'));
 
 -- ---------- 2. Login & Cek Identitas CASE-SENSITIVE (huruf besar/kecil harus persis) ----------
 create or replace function public.login_check(p_slug text, p_username text) returns text
@@ -210,6 +259,40 @@ begin
     delete from public.app_sessions where user_id = p_emp_id;
   end if;
 
+  -- Sinkronkan perubahan tarif/satuan karyawan ke semua Tenaga Kerja di produk terkait
+  if p_tarif is not null or nullif(p_satuan_tarif, '') is not null then
+    update public.product_labors pl
+    set
+      tarif_snapshot = coalesce(p_tarif, pl.tarif_snapshot),
+      metode = coalesce(nullif(p_satuan_tarif, ''), pl.metode)
+    where pl.employee_id = p_emp_id
+      and exists (
+        select 1 from public.products p
+        where p.id = pl.product_id and p.business_id = a.biz
+      );
+
+    -- Hitung ulang hpp_tenaga, total_hpp, dan laba_bersih untuk produk yang terdampak
+    update public.products p
+    set
+      hpp_tenaga = sub.new_tenaga,
+      total_hpp = coalesce(p.hpp_bahan, 0) + sub.new_tenaga + coalesce(p.hpp_overhead, 0),
+      laba_bersih = coalesce(p.harga_net, 0) - (coalesce(p.hpp_bahan, 0) + sub.new_tenaga + coalesce(p.hpp_overhead, 0))
+    from (
+      select
+        pl.product_id,
+        coalesce(sum(
+          case when pl.metode = 'manual' then pl.tarif_snapshot
+               else pl.jam_kerja * pl.tarif_snapshot end
+        ), 0) as new_tenaga
+      from public.product_labors pl
+      where pl.product_id in (
+        select distinct product_id from public.product_labors where employee_id = p_emp_id
+      )
+      group by pl.product_id
+    ) sub
+    where p.id = sub.product_id and p.business_id = a.biz;
+  end if;
+
   return (select jsonb_build_object(
     'id', id, 'username', username, 'foto_url', foto_url,
     'tarif', coalesce(tarif, 0), 'satuan_tarif', coalesce(satuan_tarif, 'jam')
@@ -241,9 +324,7 @@ language sql stable security definer set search_path = public as $$
       'diskon_nilai', coalesce(p.diskon_nilai, 0),
       'sisa_stok', greatest(
         0,
-        coalesce(p.jumlah_produksi, 0) - coalesce((
-          select sum(si.kuantitas) from public.sale_items si where si.product_id = p.id
-        ), 0)
+        coalesce(p.stok, coalesce(p.jumlah_produksi, 0))
       ),
       'foto_url', p.foto_url) as x
     from public.products p
@@ -291,12 +372,13 @@ begin
   end if;
 
   insert into public.products(
-    business_id, category_id, nama, jumlah_produksi, unit_id, overhead_mode, overhead_persen,
+    business_id, category_id, nama, jumlah_produksi, stok, unit_id, overhead_mode, overhead_persen,
     margin_metode, margin_nilai, service_charge_persen, pajak_jenis, pajak_persen, pajak_termasuk,
     pembulatan, pembulatan_step, diskon_persen, total_hpp, harga_jual, laba_bersih, harga_net,
     margin_target, hpp_bahan, hpp_tenaga, hpp_overhead, foto_url)
   values (
     a.biz, nullif(p->>'category_id', '')::uuid, trim(p->>'nama'), (p->>'jumlah_produksi')::numeric,
+    (p->>'jumlah_produksi')::numeric,
     nullif(p->>'unit_id', '')::uuid, p->>'overhead_mode', (p->>'overhead_persen')::numeric,
     p->>'margin_metode', (p->>'margin_nilai')::numeric,
     coalesce((p->>'service_charge_persen')::numeric, 0), nullif(p->>'pajak_jenis', ''),
@@ -339,7 +421,263 @@ begin
   return r;
 end $$;
 
--- ---------- 7. Hak akses ----------
+-- ---------- 6a. Sync tarif karyawan otomatis saat update_product ----------
+create or replace function public.update_product(p_token text, p_id uuid, p jsonb) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare a record; r jsonb;
+begin
+  select * into a from public._auth(p_token);
+  if a.urole <> 'bos' then raise exception 'forbidden'; end if;
+  if not exists (select 1 from public.products where id = p_id and business_id = a.biz) then
+    raise exception 'not_found';
+  end if;
+
+  update public.products set
+    category_id = nullif(p->>'category_id', '')::uuid,
+    nama = trim(p->>'nama'),
+    jumlah_produksi = (p->>'jumlah_produksi')::numeric,
+    unit_id = nullif(p->>'unit_id', '')::uuid,
+    overhead_mode = p->>'overhead_mode',
+    overhead_persen = (p->>'overhead_persen')::numeric,
+    margin_metode = p->>'margin_metode',
+    margin_nilai = (p->>'margin_nilai')::numeric,
+    service_charge_persen = coalesce((p->>'service_charge_persen')::numeric, 0),
+    pajak_jenis = nullif(p->>'pajak_jenis', ''),
+    pajak_persen = coalesce((p->>'pajak_persen')::numeric, 0),
+    pajak_termasuk = coalesce((p->>'pajak_termasuk')::boolean, false),
+    pembulatan = coalesce((p->>'pembulatan')::boolean, false),
+    pembulatan_step = (p->>'pembulatan_step')::numeric,
+    total_hpp = (p->>'total_hpp')::numeric,
+    harga_jual = (p->>'harga_jual')::numeric,
+    laba_bersih = (p->>'laba_bersih')::numeric,
+    harga_net = (p->>'harga_net')::numeric,
+    margin_target = (p->>'margin_target')::numeric,
+    hpp_bahan = (p->>'hpp_bahan')::numeric,
+    hpp_tenaga = (p->>'hpp_tenaga')::numeric,
+    hpp_overhead = (p->>'hpp_overhead')::numeric,
+    foto_url = coalesce(p->>'foto_url', foto_url)
+  where id = p_id and business_id = a.biz;
+
+  delete from public.product_materials where product_id = p_id;
+  insert into public.product_materials(product_id, material_id, qty)
+    select p_id, (m->>'material_id')::uuid, (m->>'qty')::numeric
+    from jsonb_array_elements(p->'materials') m
+    where exists (select 1 from public.materials x where x.id = (m->>'material_id')::uuid and x.business_id = a.biz);
+
+  delete from public.product_labors where product_id = p_id;
+  insert into public.product_labors(product_id, employee_id, jam_kerja, tarif_snapshot, metode)
+    select p_id, (l->>'employee_id')::uuid, (l->>'qty')::numeric, (l->>'tarif')::numeric,
+           coalesce(l->>'metode', 'jam')
+    from jsonb_array_elements(coalesce(p->'labors', '[]'::jsonb)) l
+    where exists (select 1 from public.profiles x where x.id = (l->>'employee_id')::uuid and x.business_id = a.biz);
+
+  -- Sinkronkan tarif & satuan_tarif ke profil karyawan
+  update public.profiles pr set
+    tarif = (l->>'tarif')::numeric,
+    satuan_tarif = coalesce(nullif(l->>'metode', ''), 'jam')
+  from jsonb_array_elements(coalesce(p->'labors', '[]'::jsonb)) l
+  where pr.id = (l->>'employee_id')::uuid
+    and pr.business_id = a.biz
+    and pr.role = 'karyawan';
+
+  delete from public.product_overheads where product_id = p_id;
+  insert into public.product_overheads(product_id, komponen, harga)
+    select p_id, o->>'komponen', (o->>'harga')::numeric
+    from jsonb_array_elements(coalesce(p->'overheads', '[]'::jsonb)) o;
+
+  select x into r from jsonb_array_elements(public._products_json(a.biz, 500)) x
+    where (x->>'id')::uuid = p_id limit 1;
+  return r;
+end $$;
+
+-- ---------- 6b. Penjualan otomatis mengurangi stok produk secara real-time (anti-oversell) ----------
+create or replace function public.create_sale(p_token text, p_items jsonb) returns uuid
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  a record;
+  v_sale uuid;
+  v_short text;
+begin
+  select * into a from public._auth(p_token);
+  if jsonb_array_length(coalesce(p_items, '[]'::jsonb)) < 1 then
+    raise exception 'empty_sale';
+  end if;
+
+  -- Kunci baris produk terkait (FOR UPDATE) agar 2 kasir bersamaan tidak bisa oversell
+  perform p.id
+  from public.products p
+  where p.business_id = a.biz
+    and p.id in (
+      select (it->>'product_id')::uuid
+      from jsonb_array_elements(p_items) it
+      where coalesce((it->>'qty')::numeric, 0) > 0
+    )
+  order by p.id
+  for update;
+
+  -- Validasi kecukupan stok aktual sebelum mencatat transaksi
+  select p.nama into v_short
+  from (
+    select (it->>'product_id')::uuid as product_id,
+           sum((it->>'qty')::numeric) as qty
+    from jsonb_array_elements(p_items) it
+    where coalesce((it->>'qty')::numeric, 0) > 0
+    group by (it->>'product_id')::uuid
+  ) req
+  join public.products p on p.id = req.product_id and p.business_id = a.biz
+  where coalesce(p.stok, coalesce(p.jumlah_produksi, 0)) < req.qty
+  limit 1;
+
+  if v_short is not null then
+    raise exception 'out_of_stock';
+  end if;
+
+  insert into public.sales(business_id, created_by)
+    values (a.biz, a.uid)
+    returning id into v_sale;
+
+  insert into public.sale_items(sale_id, product_id, kuantitas, harga_satuan)
+    select v_sale, (it->>'product_id')::uuid, (it->>'qty')::numeric, (it->>'harga_satuan')::numeric
+    from jsonb_array_elements(p_items) it
+    where (it->>'qty')::numeric > 0
+      and exists (select 1 from public.products p
+                  where p.id = (it->>'product_id')::uuid and p.business_id = a.biz);
+
+  -- Kurangi stok aktual produk yang terjual (tidak mengubah jumlah_produksi / HPP)
+  update public.products p
+  set stok = greatest(0, coalesce(p.stok, coalesce(p.jumlah_produksi, 0)) - s.qty)
+  from (
+    select si.product_id, sum(si.kuantitas) as qty
+    from public.sale_items si
+    where si.sale_id = v_sale
+    group by si.product_id
+  ) s
+  where p.id = s.product_id and p.business_id = a.biz;
+
+  return v_sale;
+end $$;
+
+-- ---------- 6d. Indeks performa query (produk, penjualan, tenaga kerja, sesi) ----------
+create index if not exists idx_products_biz_created on public.products(business_id, created_at desc);
+create index if not exists idx_sales_biz_created on public.sales(business_id, created_at desc);
+create index if not exists idx_sale_items_sale on public.sale_items(sale_id);
+create index if not exists idx_sale_items_product on public.sale_items(product_id);
+create index if not exists idx_product_labors_emp on public.product_labors(employee_id);
+create index if not exists idx_product_labors_prod on public.product_labors(product_id);
+create index if not exists idx_app_sessions_user on public.app_sessions(user_id);
+
+-- ---------- 6c. Bos tambah / atur stok aktual tanpa mengubah HPP ----------
+create or replace function public.update_product_stock(
+  p_token text,
+  p_id uuid,
+  p_nilai numeric,
+  p_mode text default 'add'   -- 'add' = tambah stok, 'set' = atur stok langsung
+) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare a record; r jsonb;
+begin
+  select * into a from public._auth(p_token);
+  if a.urole <> 'bos' then raise exception 'forbidden'; end if;
+  if coalesce(p_nilai, 0) < 0 then raise exception 'invalid_stock'; end if;
+
+  update public.products
+  set stok = case
+    when lower(coalesce(p_mode, 'add')) = 'set' then greatest(0, coalesce(p_nilai, 0))
+    else greatest(0, coalesce(stok, coalesce(jumlah_produksi, 0)) + coalesce(p_nilai, 0))
+  end
+  where id = p_id and business_id = a.biz;
+
+  select x into r from jsonb_array_elements(public._products_json(a.biz, 500)) x
+    where (x->>'id')::uuid = p_id limit 1;
+  return r;
+end $$;
+
+-- ---------- 6e. Bootstrap mengembalikan maksimal 10 aktivitas produk terbaru ----------
+create or replace function public.bootstrap(p_token text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  a record;
+  v_rev numeric;
+  v_profit numeric;
+  v_pcount int;
+begin
+  select * into a from public._auth(p_token);
+  perform public._seed_defaults(a.biz);
+
+  select count(*) into v_pcount
+  from public.products
+  where business_id = a.biz and coalesce(is_deleted, false) = false;
+
+  select
+    coalesce(sum(si.kuantitas * si.harga_satuan), 0),
+    coalesce(sum(
+      si.kuantitas * (
+        si.harga_satuan -
+        case when coalesce(p.jumlah_produksi, 0) > 0
+             then coalesce(p.total_hpp, 0) / p.jumlah_produksi
+             else 0 end
+      )
+    ), 0)
+  into v_rev, v_profit
+  from public.sales s
+  join public.sale_items si on si.sale_id = s.id
+  left join public.products p on p.id = si.product_id
+  where s.business_id = a.biz and s.created_at >= date_trunc('day', now());
+
+  return jsonb_build_object(
+    'profile', (select jsonb_build_object('id', p.id, 'username', p.username, 'role', p.role,
+                 'foto_url', p.foto_url) from public.profiles p where p.id = a.uid),
+    'business', (select jsonb_build_object('id', b.id, 'nama', b.nama, 'kategori', b.kategori,
+                 'deskripsi', b.deskripsi, 'logo_url', b.logo_url)
+                 from public.businesses b where b.id = a.biz),
+    'units', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'nama', nama)
+                 order by array_position(array['pcs','porsi','pack','Liter','kg','gram'], nama), nama)
+                 from public.units where business_id = a.biz), '[]'::jsonb),
+    'categories', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'nama', nama)
+                 order by array_position(array['Makanan','Minuman','Pakaian','Elektronik'], nama), nama)
+                 from public.product_categories where business_id = a.biz), '[]'::jsonb),
+    'materials', coalesce((select jsonb_agg(public._material_json(id) order by nama)
+                 from public.materials where business_id = a.biz), '[]'::jsonb),
+    'employees', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'username', username,
+                 'foto_url', foto_url, 'tarif', coalesce(tarif, 0), 'satuan_tarif', coalesce(satuan_tarif, 'jam'))
+                 order by username)
+                 from public.profiles where business_id = a.biz and role = 'karyawan'), '[]'::jsonb),
+    'stats', jsonb_build_object(
+      'product_count', coalesce(v_pcount, 0),
+      'pendapatan', coalesce(v_rev, 0),
+      'keuntungan', coalesce(v_profit, 0)
+    ),
+    'recent', public._products_json(a.biz, 10)
+  );
+end $$;
+
+-- ---------- 6f. Pastikan get_product selalu menyertakan employee_id ----------
+create or replace function public.get_product(p_token text, p_id uuid) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare a record; r jsonb;
+begin
+  select * into a from public._auth(p_token);
+  select x into r from jsonb_array_elements(public._products_json(a.biz, 500)) x
+    where (x->>'id')::uuid = p_id limit 1;
+  if r is null then raise exception 'not_found'; end if;
+  return r || jsonb_build_object(
+    'materials', coalesce((select jsonb_agg(jsonb_build_object(
+        'material_id', m.id, 'nama', m.nama, 'qty', pm.qty,
+        'unit', u.nama, 'harga_beli', m.harga_beli, 'jumlah_beli', m.jumlah_beli,
+        'penyusutan', coalesce(m.penyusutan, 0)))
+        from public.product_materials pm join public.materials m on m.id = pm.material_id
+        left join public.units u on u.id = m.unit_id where pm.product_id = p_id), '[]'::jsonb),
+    'labors', coalesce((select jsonb_agg(jsonb_build_object(
+        'employee_id', pr.id, 'nama', pr.username, 'qty', pl.jam_kerja,
+        'tarif', pl.tarif_snapshot, 'metode', pl.metode))
+        from public.product_labors pl join public.profiles pr on pr.id = pl.employee_id
+        where pl.product_id = p_id), '[]'::jsonb),
+    'overheads', coalesce((select jsonb_agg(jsonb_build_object('komponen', komponen, 'harga', harga))
+        from public.product_overheads where product_id = p_id), '[]'::jsonb));
+end $$;
+
+grant execute on function public.bootstrap(text) to anon, authenticated;
+grant execute on function public.get_product(text, uuid) to anon, authenticated;
 grant execute on function public.login_check(text, text) to anon, authenticated;
 grant execute on function public.login_user(text, text, text) to anon, authenticated;
 grant execute on function public.reset_pin(text, text, text, text) to anon, authenticated;
@@ -349,3 +687,6 @@ grant execute on function public.change_pin(text, text) to anon, authenticated;
 grant execute on function public.update_employee(text, uuid, text, text, numeric, text, text, text) to anon, authenticated;
 grant execute on function public.set_product_discount(text, uuid, text, numeric, numeric) to anon, authenticated;
 grant execute on function public.save_product(text, jsonb) to anon, authenticated;
+grant execute on function public.update_product(text, uuid, jsonb) to anon, authenticated;
+grant execute on function public.create_sale(text, jsonb) to anon, authenticated;
+grant execute on function public.update_product_stock(text, uuid, numeric, text) to anon, authenticated;

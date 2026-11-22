@@ -52,6 +52,35 @@ class ProductCard extends StatelessWidget {
                         style: const TextStyle(
                             fontSize: 12.5, color: UiColors.textMute),
                       ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: p.sisaStok <= 0
+                              ? AppColors.redSoft
+                              : UiColors.blueTint,
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(
+                            color: p.sisaStok <= 0
+                                ? AppColors.red
+                                : AppColors.blue,
+                            width: 0.9,
+                          ),
+                        ),
+                        child: Text(
+                          p.sisaStok <= 0
+                              ? 'Stok habis'
+                              : 'Sisa stok: ${Fmt.plain(p.sisaStok)} ${p.unit}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: p.sisaStok <= 0
+                                ? AppColors.red
+                                : AppColors.blue,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

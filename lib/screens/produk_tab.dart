@@ -6,6 +6,7 @@ import '../core/ui_kit.dart';
 import '../core/widgets.dart';
 import '../services/data_service.dart';
 import 'bahan_baku_screen.dart';
+import 'karyawan_home_screen.dart';
 import 'product_detail_screen.dart';
 import 'wizard/wizard_dialogs.dart';
 
@@ -95,50 +96,121 @@ class _ProdukTabState extends State<ProdukTab> {
               ),
               const SizedBox(height: 10),
 
-              // Pill Bahan Baku 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const BahanBakuScreen()),
-                  ),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.blue, width: 1.1),
+              // Pill Bahan Baku & Tambah Penjualan (untuk Bos yang juga kasir/karyawan)
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const BahanBakuScreen()),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.inventory_2_rounded,
-                            size: 22, color: AppColors.grey),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.blue, width: 1.1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.inventory_2_rounded,
+                              size: 22, color: AppColors.grey),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${_ds.materials.length}',
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      height: 1.1,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.blue)),
+                              const Text('Bahan',
+                                  style: TextStyle(
+                                      fontSize: 11.5,
+                                      height: 1.1,
+                                      color: UiColors.textMute)),
+                            ],
+                          ),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.chevron_right_rounded,
+                              size: 18, color: AppColors.black),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        if (_items.isEmpty) {
+                          warnPage(context, 'Tambah produk dulu ya!');
+                          return;
+                        }
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                TambahPenjualanScreen(products: _items),
+                          ),
+                        );
+                        if (mounted) {
+                          await _ds.load();
+                          await _refresh();
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.blue, width: 1.1),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('${_ds.materials.length}',
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    height: 1.1,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.blue)),
-                            const Text('Bahan',
-                                style: TextStyle(
-                                    fontSize: 11.5,
-                                    height: 1.1,
-                                    color: UiColors.textMute)),
+                            Icon(Icons.point_of_sale_rounded,
+                                size: 20, color: AppColors.blue),
+                            SizedBox(width: 7),
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Catat Penjualan',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      height: 1.1,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.blue,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Input transaksi langsung',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      height: 1.15,
+                                      color: UiColors.textMute,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(Icons.chevron_right_rounded,
+                                size: 18, color: AppColors.black),
                           ],
                         ),
-                        const SizedBox(width: 14),
-                        const Icon(Icons.chevron_right_rounded,
-                            size: 18, color: AppColors.black),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 14),
 

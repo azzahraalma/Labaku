@@ -331,15 +331,11 @@ class _KaryawanHomeScreenState extends State<KaryawanHomeScreen> {
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDCDCDC),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(categoryIcon(p.kategori),
-                                size: 24, color: AppColors.grey),
+                          _ProductThumb(
+                            fotoUrl: p.fotoUrl,
+                            kategori: p.kategori,
+                            size: 46,
+                            iconSize: 24,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -769,15 +765,11 @@ class _TambahPenjualanScreenState extends State<TambahPenjualanScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Container(
-                                width: 54,
-                                height: 54,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDCDCDC),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(categoryIcon(p.kategori),
-                                    size: 28, color: AppColors.grey),
+                              _ProductThumb(
+                                fotoUrl: p.fotoUrl,
+                                kategori: p.kategori,
+                                size: 54,
+                                iconSize: 28,
                               ),
                               const SizedBox(height: 8),
                               Text(p.nama,
@@ -832,7 +824,7 @@ class _TambahPenjualanScreenState extends State<TambahPenjualanScreen> {
                                   ),
                                   child: Text(
                                     outOfStock
-                                        ? 'Stok Habis'
+                                        ? 'Habis'
                                         : added
                                             ? 'Ditambah'
                                             : '+ Tambah',
@@ -926,6 +918,14 @@ class _OrderSheetState extends State<_OrderSheet> {
     try {
       await DataService.instance.createSale(items);
       if (mounted) Navigator.of(context, rootNavigator: true).pop(true);
+    } on DataFailure catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        final msg = e.code == 'out_of_stock'
+            ? 'Stok produk tidak mencukupi, cek sisa stok terbaru ya!'
+            : 'Gagal menyimpan penjualan';
+        showWarning(context, msg, top: 72);
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _saving = false);
@@ -973,15 +973,11 @@ class _OrderSheetState extends State<_OrderSheet> {
                   final q = widget.quantities[p.id] ?? 0;
                   return Row(
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFDCDCDC),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(categoryIcon(p.kategori),
-                            size: 22, color: AppColors.grey),
+                      _ProductThumb(
+                        fotoUrl: p.fotoUrl,
+                        kategori: p.kategori,
+                        size: 44,
+                        iconSize: 22,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1069,7 +1065,11 @@ class _OrderSheetState extends State<_OrderSheet> {
               text: 'Simpan',
               loading: _saving,
               style: total > 0 ? BtnStyle.primary : BtnStyle.disabledSoft,
-              onTap: total > 0 ? _save : null,
+              onTap: total > 0
+                  ? _save
+                  : () => showWarning(
+                      context, 'Lengkapin data nya dulu ya!',
+                      top: 72),
             ),
           ],
         ),
@@ -1092,6 +1092,46 @@ class _OrderSheetState extends State<_OrderSheet> {
               size: 18, color: active ? AppColors.white : AppColors.blue),
         ),
       );
+}
+
+class _ProductThumb extends StatelessWidget {
+  final String? fotoUrl;
+  final String kategori;
+  final double size;
+  final double iconSize;
+  const _ProductThumb({
+    required this.fotoUrl,
+    required this.kategori,
+    required this.size,
+    required this.iconSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Icon(categoryIcon(kategori),
+        size: iconSize, color: AppColors.grey);
+    final hasUrl = fotoUrl != null && fotoUrl!.isNotEmpty;
+    return Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xFFDCDCDC),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: hasUrl
+          ? Image.network(
+              fotoUrl!,
+              width: size,
+              height: size,
+              cacheWidth: (size * 2).round(),
+              cacheHeight: (size * 2).round(),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Center(child: fallback),
+            )
+          : Center(child: fallback),
+    );
+  }
 }
 
 class _StockBox extends StatelessWidget {

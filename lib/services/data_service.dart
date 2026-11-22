@@ -267,7 +267,7 @@ class HomeData {
   final int productCount;
   final double pendapatan;
   final double keuntungan;
-  final ProductSummary? recent;
+  final List<ProductSummary> recentList;
 
   HomeData({
     required this.username,
@@ -281,8 +281,10 @@ class HomeData {
     required this.productCount,
     required this.pendapatan,
     required this.keuntungan,
-    required this.recent,
+    required this.recentList,
   });
+
+  ProductSummary? get recent => recentList.isEmpty ? null : recentList.first;
 
   bool get isBos => role == 'bos';
 }
@@ -396,6 +398,7 @@ class DataService extends ChangeNotifier {
         'invalid_product',
         'empty_name',
         'empty_sale',
+        'out_of_stock',
       ]) {
         if (m.contains(c)) throw DataFailure(c, m);
       }
@@ -407,7 +410,9 @@ class DataService extends ChangeNotifier {
   Future<dynamic> _rpc(String fn,
       [Map<String, dynamic> params = const {}]) async {
     try {
-      return await _db.rpc(fn, params: {'p_token': _token, ...params});
+      return await _db
+          .rpc(fn, params: {'p_token': _token, ...params})
+          .timeout(const Duration(seconds: 12));
     } catch (e) {
       if (e is DataFailure) rethrow;
       _fail(e);
@@ -446,8 +451,10 @@ class DataService extends ChangeNotifier {
         productCount: (s['product_count'] as num).toInt(),
         pendapatan: _d(s['pendapatan']),
         keuntungan: _d(s['keuntungan']),
-        recent:
-            recent.isEmpty ? null : ProductSummary.from(recent.first as Map),
+        recentList: recent
+            .map((e) => ProductSummary.from(e as Map))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
       );
     } on DataFailure catch (e) {
       error = e.code;
@@ -535,8 +542,12 @@ class DataService extends ChangeNotifier {
       String bucket, String prefix, Uint8List bytes) async {
     final path =
         '$prefix/${home?.businessId ?? 'x'}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    await _db.storage.from(bucket).uploadBinary(path, bytes,
-        fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true));
+    await _db.storage
+        .from(bucket)
+        .uploadBinary(path, bytes,
+            fileOptions:
+                const FileOptions(contentType: 'image/jpeg', upsert: false))
+        .timeout(const Duration(seconds: 15));
     return _db.storage.from(bucket).getPublicUrl(path);
   }
 
@@ -588,6 +599,7 @@ class DataService extends ChangeNotifier {
     final i = employees.indexWhere((x) => x.id == e.id);
     if (i >= 0) employees = [...employees]..[i] = e;
     notifyListeners();
+    await load();
     return e;
   }
 
@@ -620,6 +632,21 @@ class DataService extends ChangeNotifier {
       'p_mode': mode,
       'p_nilai': nilai,
       'p_persen': persen,
+    }) as Map;
+    final p = ProductSummary.from(r);
+    await load();
+    return p;
+  }
+
+  Future<ProductSummary> updateProductStock({
+    required String productId,
+    required double nilai,
+    String mode = 'add', // 'add' | 'set'
+  }) async {
+    final r = await _rpc('update_product_stock', {
+      'p_id': productId,
+      'p_nilai': nilai,
+      'p_mode': mode,
     }) as Map;
     final p = ProductSummary.from(r);
     await load();

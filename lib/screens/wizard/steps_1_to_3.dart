@@ -6,6 +6,7 @@ import '../../core/calc.dart';
 import '../../core/format.dart';
 import '../../core/ui_kit.dart';
 import '../../core/widgets.dart';
+import '../../services/auth_service.dart';
 import '../../services/data_service.dart';
 import 'draft.dart';
 import 'labor_dialog.dart';
@@ -91,18 +92,42 @@ class _Step1InfoDasarState extends State<Step1InfoDasar> {
             child: d.foto != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(14),
-                    child: Image.memory(d.foto!, fit: BoxFit.cover),
+                    child: Image.memory(d.foto!,
+                        width: 146, height: 152, fit: BoxFit.cover),
                   )
-                : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_a_photo_rounded,
-                          size: 36, color: AppColors.grey),
-                      SizedBox(height: 8),
-                      Text('Tambah Foto Produk',
-                          style: TextStyle(fontSize: 11.5, color: UiColors.textMute)),
-                    ],
-                  ),
+                : (d.existingFotoUrl != null && d.existingFotoUrl!.isNotEmpty)
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.network(
+                          d.existingFotoUrl!,
+                          width: 146,
+                          height: 152,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo_rounded,
+                                  size: 36, color: AppColors.grey),
+                              SizedBox(height: 8),
+                              Text('Tambah Foto Produk',
+                                  style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: UiColors.textMute)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_a_photo_rounded,
+                              size: 36, color: AppColors.grey),
+                          SizedBox(height: 8),
+                          Text('Tambah Foto Produk',
+                              style: TextStyle(
+                                  fontSize: 11.5, color: UiColors.textMute)),
+                        ],
+                      ),
           ),
           const SizedBox(height: 24),
           Container(
@@ -185,7 +210,29 @@ class _Step1InfoDasarState extends State<Step1InfoDasar> {
                 ),
                 const SizedBox(height: 20),
                 const SectionLabel('Jumlah Produksi', weight: FontWeight.w600),
-                const SizedBox(height: 14),
+                const SizedBox(height: 6),
+                const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 1),
+                      child: Icon(Icons.info_rounded,
+                          size: 17, color: AppColors.blue),
+                    ),
+                    SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        'Jumlah produksi otomatis menjadi stok awal produk dan bisa ditambah kapan saja.',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.35,
+                          color: UiColors.textMute,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -542,9 +589,111 @@ class Step3TenagaKerja extends StatelessWidget {
     }
   }
 
+  Future<void> _addSelfLabor(BuildContext context) async {
+    final uid = AuthService.instance.userId;
+    if (uid == null) return;
+    final myName = '${DataService.instance.home?.username ?? 'Pemilik'} (Saya)';
+    final existingIdx = draft.labors.indexWhere((l) => l.employeeId == uid);
+    final initial = existingIdx >= 0
+        ? draft.labors[existingIdx]
+        : LaborLine(
+            employeeId: uid,
+            name: myName,
+            metode: 'jam',
+            qty: 1,
+            tarif: 0,
+          );
+    final line = await showAppDialog<LaborLine>(
+      context,
+      (_) => LaborDialog(editing: initial),
+      dismissible: true,
+    );
+    if (line != null) {
+      final fixed = LaborLine(
+        employeeId: uid,
+        name: myName,
+        metode: line.metode,
+        qty: line.qty,
+        tarif: line.tarif,
+      );
+      if (existingIdx >= 0) {
+        draft.labors[existingIdx] = fixed;
+      } else {
+        draft.labors.insert(0, fixed);
+      }
+      onChanged();
+    }
+  }
+
+  Widget _selfOptionTile({
+    required bool selected,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? UiColors.blueTint : AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.blue : const Color(0xFFD0D5DD),
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                size: 20,
+                color: selected ? AppColors.blue : AppColors.grey,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      height: 1.3,
+                      color: UiColors.textMute,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final list = draft.labors;
+    final bosId = AuthService.instance.userId;
+    final hasSelfLine =
+        bosId != null && list.any((l) => l.employeeId == bosId);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
       child: Column(
@@ -561,7 +710,10 @@ class Step3TenagaKerja extends StatelessWidget {
                             fontSize: 20,
                             fontWeight: FontWeight.w600,
                             color: Colors.black)),
-                    Text('${list.length} pekerja ditambahkan',
+                    Text(
+                        list.isEmpty && draft.selfWorker && !draft.selfIncludeCost
+                            ? 'Dikerjakan sendiri (tanpa biaya tenaga kerja)'
+                            : '${list.length} pekerja ditambahkan',
                         style: const TextStyle(
                             fontSize: 13, color: UiColors.textMute)),
                   ],
@@ -609,8 +761,145 @@ class Step3TenagaKerja extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 14),
+
+          // Switch: Saya adalah karyawannya (tetap bisa tambah karyawan lain)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.blue, width: 1.2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Saya adalah karyawannya',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.black,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Aktifkan jika kamu ikut turun langsung mengerjakan produk atau menjaga usaha. Kamu tetap bisa tambah karyawan lain.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              height: 1.35,
+                              color: UiColors.textMute,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: draft.selfWorker,
+                      activeThumbColor: AppColors.white,
+                      activeTrackColor: AppColors.blue,
+                      onChanged: (v) {
+                        draft.selfWorker = v;
+                        if (!v) {
+                          draft.selfIncludeCost = false;
+                          if (bosId != null) {
+                            draft.labors
+                                .removeWhere((l) => l.employeeId == bosId);
+                          }
+                        } else {
+                          draft.selfIncludeCost = false;
+                        }
+                        onChanged();
+                      },
+                    ),
+                  ],
+                ),
+                if (draft.selfWorker) ...[
+                  const SizedBox(height: 12),
+                  _selfOptionTile(
+                    selected: !draft.selfIncludeCost,
+                    title: 'Tanpa biaya tenaga kerja untuk saya',
+                    subtitle: 'Tenagamu tidak dimasukkan ke modal (Rp0).',
+                    onTap: () {
+                      draft.selfIncludeCost = false;
+                      if (bosId != null) {
+                        draft.labors.removeWhere((l) => l.employeeId == bosId);
+                      }
+                      onChanged();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _selfOptionTile(
+                    selected: draft.selfIncludeCost,
+                    title: 'Tetap masukkan biaya tenaga kerja saya',
+                    subtitle: 'Hitung gaji untuk dirimu sendiri agar masuk ke modal.',
+                    onTap: () {
+                      draft.selfIncludeCost = true;
+                      onChanged();
+                      if (!hasSelfLine) {
+                        _addSelfLabor(context);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: UiColors.blueTint,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(top: 1),
+                          child: Icon(Icons.info_rounded,
+                              size: 16, color: AppColors.blue),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Biaya tenaga kerja dihitung di luar laba usaha. Jadi kamu tetap dapat gaji sendiri + laba bersih usaha.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              height: 1.4,
+                              color: AppColors.black,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (draft.selfIncludeCost && !hasSelfLine) ...[
+                    const SizedBox(height: 12),
+                    Center(
+                      child: AppButton(
+                        text: '+  Atur Biaya Tenaga Kerja Saya',
+                        width: 250,
+                        height: 40,
+                        fontSize: 13.5,
+                        onTap: () => _addSelfLabor(context),
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
-          if (list.isEmpty)
+
+          if (list.isEmpty && draft.selfWorker && !draft.selfIncludeCost)
+            const SizedBox.shrink()
+          else if (list.isEmpty && !draft.selfWorker)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 42, 24, 42),
@@ -647,7 +936,7 @@ class Step3TenagaKerja extends StatelessWidget {
                 ],
               ),
             )
-          else ...[
+          else if (list.isNotEmpty) ...[
             _BlueTotalCard(
               title: 'Total Biaya Tenaga Kerja',
               subtitle: '${list.length} Tenaga Kerja',

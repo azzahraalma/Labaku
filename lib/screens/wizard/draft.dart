@@ -16,6 +16,7 @@ class ProductDraft {
   // Langkah 1 - Info dasar
   String nama = '';
   Uint8List? foto;
+  String? existingFotoUrl;
   CategoryItem? category; // null = "Lainnya"
   double jumlah = 0;
   UnitItem? unit;
@@ -24,6 +25,8 @@ class ProductDraft {
   final List<RecipeLine> recipe = [];
 
   // Langkah 3 - Tenaga kerja
+  bool selfWorker = false;
+  bool selfIncludeCost = false;
   final List<LaborLine> labors = [];
 
   // Langkah 4 - Overhead

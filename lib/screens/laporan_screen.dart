@@ -194,7 +194,9 @@ class _LaporanTabState extends State<LaporanTab> {
               ),
             )
           else
-            for (final it in r.items.take(5))
+            for (final it in ([...r.items]
+                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+                .take(10))
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _TransactionCard(item: it),

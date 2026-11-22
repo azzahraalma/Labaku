@@ -122,6 +122,9 @@ class StarterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
     final topPad = MediaQuery.of(context).padding.top;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final mascotW = (screenW * 0.84).clamp(280.0, 360.0);
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -131,7 +134,7 @@ class StarterScreen extends StatelessWidget {
             clipper: _TopArcClipper(),
             child: Container(
               width: double.infinity,
-              height: topPad + 54,
+              height: topPad + 70,
               color: AppColors.yellow,
             ),
           ),
@@ -139,24 +142,24 @@ class StarterScreen extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 28),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  const SizedBox(height: 26),
+                  const SizedBox(height: 22),
                   const Text(
                     'Selamat Datang di',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 23,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.black,
+                      color: Color(0xFF333333),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Image.asset(
                     AppImages.mascot,
-                    width: 265,
-                    height: 270,
+                    width: mascotW,
+                    height: mascotW * 1.02,
                     fit: BoxFit.contain,
                     gaplessPlayback: true,
                     errorBuilder: (_, __, ___) => SizedBox(
@@ -204,21 +207,21 @@ class StarterScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 24),
 
                   const IntrinsicWidth(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _FeatureItem(text: 'Hitung Modal Otomatis'),
-                        SizedBox(height: 18),
+                        SizedBox(height: 20),
                         _FeatureItem(text: 'Simulasi Margin & Harga'),
-                        SizedBox(height: 18),
+                        SizedBox(height: 20),
                         _FeatureItem(text: 'Siap untuk Semua Usaha'),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 22),
                 ],
               ),
             ),
@@ -230,31 +233,31 @@ class StarterScreen extends StatelessWidget {
               width: double.infinity,
               color: AppColors.blue,
               padding: EdgeInsets.fromLTRB(
-                34,
-                58,
-                34,
-                MediaQuery.of(context).padding.bottom + 36,
+                28,
+                74,
+                28,
+                bottomPad + 46,
               ),
               child: Center(
                 child: Container(
-                  width: 260,
-                  height: 54,
+                  width: 296,
+                  height: 62,
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0x28000000),
-                        blurRadius: 12,
-                        offset: Offset(0, 4),
+                        color: Color(0x30000000),
+                        blurRadius: 14,
+                        offset: Offset(0, 5),
                       ),
                     ],
                   ),
                   child: Material(
                     color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       onTap: () => Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
                           builder: (_) => const LoginScreen(),
@@ -266,15 +269,15 @@ class StarterScreen extends StatelessWidget {
                           Text(
                             'Mulai Sekarang',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 21.5,
+                              fontWeight: FontWeight.w800,
                               color: AppColors.black,
                             ),
                           ),
                           SizedBox(width: 6),
                           Icon(
                             Icons.chevron_right_rounded,
-                            size: 26,
+                            size: 30,
                             color: AppColors.black,
                           ),
                         ],
@@ -301,25 +304,25 @@ class _FeatureItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: 30,
+          height: 30,
           decoration: const BoxDecoration(
             color: AppColors.blue,
             shape: BoxShape.circle,
           ),
           child: const Icon(
             Icons.check_rounded,
-            size: 16,
+            size: 20,
             color: AppColors.white,
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 16),
         Text(
           text,
           style: const TextStyle(
-            fontSize: 15.5,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF4A4A4A),
           ),
         ),
       ],
@@ -331,12 +334,12 @@ class _TopArcClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path()
-      ..lineTo(0, size.height - 16)
+      ..lineTo(0, size.height - 20)
       ..quadraticBezierTo(
         size.width * 0.5,
-        size.height + 14,
+        size.height + 16,
         size.width,
-        size.height - 16,
+        size.height - 20,
       )
       ..lineTo(size.width, 0)
       ..close();
@@ -354,7 +357,7 @@ class _BottomWaveClipper extends CustomClipper<Path> {
       ..moveTo(0, 0)
       ..quadraticBezierTo(
         size.width * 0.5,
-        46,
+        56,
         size.width,
         0,
       )
