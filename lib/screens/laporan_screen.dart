@@ -26,7 +26,7 @@ String _fmtTxDate(DateTime d) {
   return '${d.day} ${m[d.month - 1]} ${d.year}  •  $hh:$mm WIB';
 }
 
-/// Tab Laporan (sesuai tampilan halaman laporan.jpg).
+/// Laporan 
 class LaporanTab extends StatefulWidget {
   const LaporanTab({super.key});
 
@@ -256,7 +256,7 @@ class _LaporanTabState extends State<LaporanTab> {
       );
 }
 
-/// Halaman "Laporan Transaksi" (Lihat semua + Unduh Laporan CSV).
+/// Laporan Transaksi
 class AllTransactionsScreen extends StatefulWidget {
   final String initialRange;
   const AllTransactionsScreen({super.key, this.initialRange = 'today'});

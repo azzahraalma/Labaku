@@ -12,9 +12,7 @@ import 'labor_dialog.dart';
 import 'material_dialog.dart';
 import 'wizard_dialogs.dart';
 
-// ======================================================================
 // LANGKAH 1/6 : INFO DASAR
-// ======================================================================
 class Step1InfoDasar extends StatefulWidget {
   final ProductDraft draft;
   final VoidCallback onChanged;
@@ -231,9 +229,7 @@ class _Step1InfoDasarState extends State<Step1InfoDasar> {
   }
 }
 
-// ======================================================================
 // LANGKAH 2/6 : BAHAN BAKU
-// ======================================================================
 class Step2BahanBaku extends StatelessWidget {
   final ProductDraft draft;
   final bool showMinWarning;
@@ -488,9 +484,7 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-// ======================================================================
 // LANGKAH 3/6 : TENAGA KERJA
-// ======================================================================
 class Step3TenagaKerja extends StatelessWidget {
   final ProductDraft draft;
   final VoidCallback onChanged;
@@ -752,9 +746,7 @@ class Step3TenagaKerja extends StatelessWidget {
   }
 }
 
-// ======================================================================
 // Komponen bersama langkah 2 & 3
-// ======================================================================
 class _BlueTotalCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -815,7 +807,6 @@ class _BlueTotalCard extends StatelessWidget {
   }
 }
 
-/// Ilustrasi vektor kecil (clipboard + kotak) tanpa perlu file gambar.
 class _EmptyIllustration extends StatelessWidget {
   const _EmptyIllustration();
 

@@ -11,7 +11,6 @@ class AppColors {
   static const red = Color(0xFFD70004);
   static const overlay = Color(0x9E000000); // 000000 @ 62%
 
-  // turunan netral untuk permukaan (tombol disabled, keypad, dsb)
   static const surface = Color(0xFFF0F0F0);
   static const keypad = Color(0xFFDADADA);
   static const redSoft = Color(0xFFFFDADA);

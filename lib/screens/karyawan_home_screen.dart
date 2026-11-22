@@ -7,11 +7,9 @@ import '../core/format.dart';
 import '../core/ui_kit.dart';
 import '../core/widgets.dart';
 import '../services/data_service.dart';
+import 'terms_screen.dart';
 import 'wizard/wizard_dialogs.dart';
 
-/// Tampilan khusus akun Karyawan (akses terbatas sesuai diagram use case):
-/// - Tab 1: Beranda (Daftar Produk & Harga + tombol "+ Tambah Penjualan")
-/// - Tab 2: Profil (Edit Foto Profil + Nama read-only + Log Out)
 class KaryawanHomeScreen extends StatefulWidget {
   final VoidCallback onLogout;
   const KaryawanHomeScreen({super.key, required this.onLogout});
@@ -194,7 +192,7 @@ class _KaryawanHomeScreenState extends State<KaryawanHomeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Kartu Usaha (read-only)
+              // Kartu Usaha 
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -404,7 +402,7 @@ class _KaryawanHomeScreenState extends State<KaryawanHomeScreen> {
           ),
         ),
 
-        // Tombol melayang "+ Tambah Penjualan"
+        // Tambah Penjualan
         Positioned(
           left: 0,
           right: 0,
@@ -527,6 +525,46 @@ class _KaryawanHomeScreenState extends State<KaryawanHomeScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 14),
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const TermsScreen()),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.blue, width: 1.2),
+            ),
+            child: Row(
+              children: [
+                IconBadge(
+                  Icons.description_rounded,
+                  size: 42,
+                  bg: UiColors.lavender,
+                  fg: AppColors.blue,
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Text(
+                    'Syarat & Ketentuan',
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.black,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 22,
+                  color: AppColors.black,
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 22),
         SizedBox(
           width: double.infinity,
@@ -549,9 +587,7 @@ class _KaryawanHomeScreenState extends State<KaryawanHomeScreen> {
   }
 }
 
-// ======================================================================
-// TAMBAH PENJUALAN (Grid 2 kolom + Sheet Konfirmasi Pesanan)
-// ======================================================================
+// TAMBAH PENJUALAN 
 class TambahPenjualanScreen extends StatefulWidget {
   final List<ProductSummary> products;
   const TambahPenjualanScreen({super.key, required this.products});
@@ -820,7 +856,7 @@ class _TambahPenjualanScreenState extends State<TambahPenjualanScreen> {
                 ],
               ),
 
-              // Tombol melayang "Konfirmasi Pesanan"
+              // Konfirmasi Pesanan
               Positioned(
                 left: 0,
                 right: 0,

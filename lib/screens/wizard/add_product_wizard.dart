@@ -10,8 +10,6 @@ import 'steps_1_to_3.dart';
 import 'steps_4_to_6.dart';
 import 'wizard_dialogs.dart';
 
-/// Wizard 6 langkah: Tambah / Edit Produk & Hitung HPP.
-/// Mengembalikan `true` jika produk berhasil disimpan/diperbarui.
 class AddProductWizard extends StatefulWidget {
   final ProductDetail? editing;
   const AddProductWizard({super.key, this.editing});

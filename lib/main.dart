@@ -14,7 +14,6 @@ Future<void> main() async {
 
   await dotenv.load(fileName: '.env');
 
-  // Satu-satunya init yang di-await sebelum UI tampil -> start cepat.
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
     publishableKey: AppConfig.supabaseAnonKey,

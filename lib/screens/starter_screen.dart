@@ -1,16 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/app_config.dart';
 import '../core/app_theme.dart';
 import '../services/auth_service.dart';
+import '../services/data_service.dart';
+import 'home_screen.dart';
 import 'login_screen.dart';
 
-/// ======================================================================
-/// LOADING SCREEN (hanya memakai logo.png)
-/// ======================================================================
+/// LOADING SCREEN 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
 
@@ -19,29 +17,45 @@ class LoadingScreen extends StatefulWidget {
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
-  Timer? _timer;
-
   @override
   void initState() {
     super.initState();
-    _timer = Timer(const Duration(milliseconds: 900), _next);
+    _bootstrap();
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _next() {
-    if (!mounted) return;
+  Future<void> _bootstrap() async {
+    final minDelay = Future<void>.delayed(const Duration(milliseconds: 900));
     final hasSession = AuthService.instance.hasSession;
+
+    if (!hasSession) {
+      await minDelay;
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const StarterScreen()),
+      );
+      return;
+    }
+
+    await Future.wait<void>([
+      minDelay,
+      DataService.instance
+          .load()
+          .timeout(const Duration(seconds: 8), onTimeout: () {}),
+    ]);
+    if (!mounted) return;
+
+    if (DataService.instance.error == 'unauthorized') {
+      DataService.instance.clear();
+      await AuthService.instance.signOut();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const StarterScreen()),
+      );
+      return;
+    }
+
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => hasSession
-            ? const LoginScreen(resume: true)
-            : const StarterScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 
@@ -100,9 +114,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
   }
 }
 
-/// ======================================================================
-/// STARTER SCREEN (hanya memakai mascot.png)
-/// ======================================================================
+/// STARTER SCREEN 
 class StarterScreen extends StatelessWidget {
   const StarterScreen({super.key});
 
@@ -115,7 +127,6 @@ class StarterScreen extends StatelessWidget {
       backgroundColor: AppColors.white,
       body: Column(
         children: [
-          // Lengkungan kuning di bagian atas
           ClipPath(
             clipper: _TopArcClipper(),
             child: Container(
@@ -125,7 +136,6 @@ class StarterScreen extends StatelessWidget {
             ),
           ),
 
-          // Konten tengah
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -196,7 +206,6 @@ class StarterScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 22),
 
-                  // 3 poin fitur (blok rata tengah, isi rata kiri)
                   const IntrinsicWidth(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +224,6 @@ class StarterScreen extends StatelessWidget {
             ),
           ),
 
-          // Lengkungan biru bawah + tombol Mulai Sekarang
           ClipPath(
             clipper: _BottomWaveClipper(),
             child: Container(
@@ -319,7 +327,6 @@ class _FeatureItem extends StatelessWidget {
   }
 }
 
-/// Lengkungan kuning di atas (melengkung lembut ke bawah di tengah)
 class _TopArcClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
@@ -340,7 +347,6 @@ class _TopArcClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-/// Lengkungan biru di bawah (tinggi di kiri & kanan, melengkung turun di tengah)
 class _BottomWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

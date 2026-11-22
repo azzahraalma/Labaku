@@ -10,8 +10,7 @@ import '../services/data_service.dart';
 import 'discount_sim_screen.dart';
 import 'wizard/add_product_wizard.dart';
 
-/// Halaman "Detail Produk" (sesuai Tampilan Detail Produk.jpg).
-/// Mengembalikan `true` jika produk dihapus atau diubah.
+/// Detail Produk
 class ProductDetailScreen extends StatefulWidget {
   final ProductSummary summary;
   const ProductDetailScreen({super.key, required this.summary});
@@ -152,7 +151,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Kartu biru header
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -366,7 +364,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Tombol Hitung Diskon
+                      // Hitung Diskon
                       SizedBox(
                         width: double.infinity,
                         height: 42,
@@ -532,7 +530,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Tombol Edit Produk (sesuai UI Detail Produk)
+                      // Edit Produk 
                       SizedBox(
                         width: double.infinity,
                         height: 44,
@@ -568,7 +566,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: 10),
 
-                      // Tombol Hapus Produk
+                      // Hapus Produk
                       SizedBox(
                         width: double.infinity,
                         height: 44,

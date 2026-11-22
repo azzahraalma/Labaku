@@ -9,7 +9,7 @@ import '../core/widgets.dart';
 import '../services/data_service.dart';
 import 'wizard/wizard_dialogs.dart';
 
-/// Halaman "Bahan Baku" (dibuka dari pill "X Bahan >" di Tab Produk).
+/// Bahan Baku
 class BahanBakuScreen extends StatefulWidget {
   const BahanBakuScreen({super.key});
 

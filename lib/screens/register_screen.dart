@@ -7,6 +7,7 @@ import '../core/app_theme.dart';
 import '../core/widgets.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import 'terms_screen.dart';
 
 Future<Uint8List?> _pickImage() async {
   try {
@@ -29,9 +30,7 @@ class BusinessData {
   const BusinessData(this.name, this.description, this.category, this.logo);
 }
 
-// ======================================================================
 // REGISTER SCREEN
-// ======================================================================
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -114,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _busy = false);
     if (!mounted) return;
 
-    // --- Buat PIN lalu konfirmasi ---
+    // Buat PIN 
     String? first;
     final created =
         await showPinSheet(context, title: 'Buat PIN', onSubmit: (pin) async {
@@ -302,7 +301,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const Text('Dengan mendaftar saya setuju dengan',
                     style: TextStyle(fontSize: 14.5, color: Colors.black)),
                 GestureDetector(
-                  onTap: () {}, // TODO: buka halaman Syarat dan Ketentuan
+                  onTap: () async {
+                    final agreed = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => const TermsScreen(showAgreeButton: true),
+                      ),
+                    );
+                    if (agreed == true && mounted) {
+                      setState(() => _agree = true);
+                    }
+                  },
                   child: const Text('Syarat dan Ketentuan',
                       style: TextStyle(
                           fontSize: 14.5,
@@ -317,9 +325,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 }
 
-// ======================================================================
 // Widget bersama
-// ======================================================================
 class PhotoPicker extends StatelessWidget {
   final Uint8List? bytes;
   final double size;
@@ -384,7 +390,7 @@ class PhotoPicker extends StatelessWidget {
 
 class SelectTile extends StatelessWidget {
   final IconData icon;
-  final String? title; // tebal (opsional)
+  final String? title; 
   final String subtitle;
   final bool error;
   final VoidCallback onTap;
@@ -455,9 +461,7 @@ class SelectTile extends StatelessWidget {
   }
 }
 
-// ======================================================================
-// DIALOG: Buat Usaha
-// ======================================================================
+// Buat Usaha
 class BusinessDialog extends StatefulWidget {
   final BusinessData? initial;
   const BusinessDialog({super.key, this.initial});
@@ -596,9 +600,7 @@ class _BusinessDialogState extends State<BusinessDialog> {
   }
 }
 
-// ======================================================================
 // DIALOG: Pilih Kategori (+ Kategori Lainnya)
-// ======================================================================
 class CategoryDialog extends StatelessWidget {
   const CategoryDialog({super.key});
 

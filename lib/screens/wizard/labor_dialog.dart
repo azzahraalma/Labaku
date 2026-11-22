@@ -11,10 +11,6 @@ import '../../core/widgets.dart';
 import '../../services/data_service.dart';
 import 'wizard_dialogs.dart';
 
-/// Dialog "Tambah Tenaga Kerja" (2 tahap):
-/// Tahap 1: Pilih karyawan yang sudah ada ATAU buat akun karyawan baru (Nama, Foto, Password, PIN, Konfirmasi PIN).
-/// Tahap 2: Pilih Metode Input (Tarif per Jam / Hari / Output / Input Manual) + detail tarif & jumlah.
-/// Mengembalikan [LaborLine].
 class LaborDialog extends StatefulWidget {
   final Set<String> excludeEmployeeIds;
   final LaborLine? editing;

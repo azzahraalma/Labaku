@@ -9,7 +9,7 @@ import 'home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  /// true: sesi Supabase masih tersimpan -> langsung minta PIN.
+  /// true
   final bool resume;
   const LoginScreen({super.key, this.resume = false});
 

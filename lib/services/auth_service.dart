@@ -44,20 +44,19 @@ class AppProfile {
 
 class AuthFailure implements Exception {
   final String
-      code; // invalid_credentials | business_taken | user_taken | network | unknown
+      code; 
   final String message;
   const AuthFailure(this.code, [this.message = '']);
   @override
   String toString() => 'AuthFailure($code) $message';
 }
 
-/// Semua akses backend (Supabase) untuk alur autentikasi.
-/// Murni memakai Nama Pengguna + Nama Usaha + Password + PIN (tanpa email).
 class AuthService {
   AuthService._();
   static final instance = AuthService._();
 
   static const _kUserIdKey = 'labaku_user_id';
+  static const _kTokenKey = 'labaku_session_token';
 
   SupabaseClient get _db => Supabase.instance.client;
 
@@ -65,18 +64,26 @@ class AuthService {
   String? _pendingUserId;
   String? _token;
 
-  /// Token sesi (hanya valid setelah PIN benar).
   String? get token => _token;
 
-  /// true setelah PIN diverifikasi pada sesi aplikasi ini.
   bool unlocked = false;
 
-  bool get hasSession => _userId != null;
+  bool get hasSession =>
+      _userId != null && _token != null && _token!.isNotEmpty;
 
-  /// Muat sesi user tersimpan saat aplikasi dibuka.
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    _userId = prefs.getString(_kUserIdKey);
+    final uid = prefs.getString(_kUserIdKey);
+    final tok = prefs.getString(_kTokenKey);
+    if (uid != null && uid.isNotEmpty && tok != null && tok.isNotEmpty) {
+      _userId = uid;
+      _token = tok;
+      unlocked = true;
+    } else {
+      _userId = null;
+      _token = null;
+      unlocked = false;
+    }
   }
 
   Future<void> _saveSession(String uid, String token) async {
@@ -85,9 +92,9 @@ class AuthService {
     _token = token;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kUserIdKey, uid);
+    await prefs.setString(_kTokenKey, token);
   }
 
-  // ---------- helper ----------
   static String slug(String s) {
     final r = s.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
     return r.replaceAll(RegExp(r'^-+|-+$'), '');
@@ -106,7 +113,6 @@ class AuthService {
     }
   }
 
-  // ---------- login (case-sensitive: huruf besar/kecil harus persis) ----------
   Future<LoginCheck> loginCheck(String username, String business) async {
     final r = await _db.rpc('login_check', params: {
       'p_slug': business.trim(),
@@ -115,7 +121,6 @@ class AuthService {
     return _parseStatus(r as String);
   }
 
-  /// Verifikasi Nama Pengguna + Nama Usaha + Password dalam 1 panggilan RPC.
   Future<LoginCheck> signIn(
       String username, String business, String password) async {
     final r = await _db.rpc('login_user', params: {
@@ -163,6 +168,7 @@ class AuthService {
     _token = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kUserIdKey);
+    await prefs.remove(_kTokenKey);
     if (tok != null) {
       try {
         await _db.rpc('logout', params: {'p_token': tok});
@@ -170,7 +176,7 @@ class AuthService {
     }
   }
 
-  // ---------- profil ----------
+  // profil 
   Future<AppProfile?> myProfile() async {
     final uid = _userId ?? _pendingUserId;
     if (uid == null) return null;
@@ -188,7 +194,7 @@ class AuthService {
     );
   }
 
-  // ---------- daftar ----------
+  // daftar
   Future<bool> businessAvailable(String business) async {
     final r = await _db
         .rpc('business_available', params: {'p_slug': slug(business)});
@@ -207,7 +213,7 @@ class AuthService {
   }) async {
     final prefix = '${slug(businessName)}_${DateTime.now().millisecondsSinceEpoch}';
 
-    // upload foto paralel (opsional)
+    // upload foto
     final urls = await Future.wait<String?>([
       _upload('avatars', prefix, avatar),
       _upload('logos', prefix, logo),
@@ -252,8 +258,7 @@ class AuthService {
     return _db.storage.from(bucket).getPublicUrl(path);
   }
 
-  // ---------- lupa PIN ----------
-  /// Verifikasi dengan kata sandi, lalu ganti PIN dalam 1 panggilan RPC.
+  // lupa PIN 
   Future<LoginCheck> resetPin(
       String username, String business, String password, String newPin) async {
     final r = await _db.rpc('reset_pin', params: {
@@ -274,11 +279,11 @@ class AuthService {
     return LoginCheck.ok;
   }
 
-  // ---------- lupa kata sandi ----------
+  // lupa kata sandi
   Future<LoginCheck> precheckIdentity(String username, String business) =>
       loginCheck(username, business);
 
-  /// Verifikasi dengan PIN lalu ganti kata sandi langsung via RPC (tanpa Edge Function).
+  /// Verifikasi dengan PIN 
   Future<PinResult> resetPassword(
       String username, String business, String pin, String newPassword) async {
     final r = await _db.rpc('reset_password', params: {

@@ -1,25 +1,5 @@
 import 'dart:math' as math;
 
-/// ======================================================================
-/// MESIN PERHITUNGAN HPP & HARGA JUAL  (satu-satunya sumber rumus)
-///
-/// Teori yang dipakai:
-///  - Biaya bahan baku  = Σ (qty resep × harga efektif per satuan)
-///      harga efektif   = harga beli total / (jumlah beli × (1 − penyusutan))
-///  - Biaya tenaga kerja = Σ (qty × tarif)   |  mode manual = total langsung
-///  - Overhead (persentase) = % × (bahan baku + tenaga kerja)  [basis]
-///  - HPP total = bahan baku + tenaga kerja + overhead
-///  - Markup : harga = HPP × (1 + m)                (m = % dari modal)
-///  - Margin : harga = HPP / (1 − m)                (m = % dari harga jual)
-///  - Manual : harga = harga per unit × jumlah produksi
-///  - Service charge & pajak ditambahkan berurutan (berlipat):
-///      total = harga × (1 + service) × (1 + pajak)
-///  - "Sudah termasuk pajak": harga yang diinput sudah final, sehingga
-///      harga bersih = harga / ((1 + service) × (1 + pajak))
-///  - Pembulatan: harga PER UNIT dibulatkan ke atas ke kelipatan, lalu × jumlah.
-///  - Laba bersih = harga bersih (di luar pajak & layanan) − HPP
-///  - Margin aktual = laba bersih / harga bersih
-/// ======================================================================
 class MaterialCost {
   /// Harga efektif per satuan setelah memperhitungkan penyusutan.
   static double unitCost({

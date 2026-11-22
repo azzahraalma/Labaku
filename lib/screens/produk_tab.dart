@@ -9,7 +9,6 @@ import 'bahan_baku_screen.dart';
 import 'product_detail_screen.dart';
 import 'wizard/wizard_dialogs.dart';
 
-/// Tab Produk (sesuai Tampilan halaman produk.jpg).
 class ProdukTab extends StatefulWidget {
   final VoidCallback onAddProduct;
   const ProdukTab({super.key, required this.onAddProduct});
@@ -96,7 +95,7 @@ class _ProdukTabState extends State<ProdukTab> {
               ),
               const SizedBox(height: 10),
 
-              // Pill Bahan Baku ("X Bahan >")
+              // Pill Bahan Baku 
               Align(
                 alignment: Alignment.centerLeft,
                 child: GestureDetector(
@@ -216,7 +215,7 @@ class _ProdukTabState extends State<ProdukTab> {
           ),
         ),
 
-        // Tombol melayang "+ Tambah Produk"
+        // Tambah Produk
         Positioned(
           left: 0,
           right: 0,

@@ -17,7 +17,7 @@ import 'product_detail_screen.dart';
 import 'produk_tab.dart';
 import 'wizard/add_product_wizard.dart';
 
-/// Halaman utama: otomatis menampilkan antarmuka Bos (4 tab) atau Karyawan (2 tab, akses terbatas).
+/// Halaman utama
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -33,7 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _ds.addListener(_onData);
-    _ds.load();
+    if (_ds.home == null && !_ds.loading) {
+      _ds.load();
+    }
   }
 
   @override
@@ -69,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
 
-    // Jika role = karyawan, tampilkan tampilan khusus karyawan (akses terbatas)
     if (_ds.home != null && !_ds.home!.isBos) {
       return KaryawanHomeScreen(onLogout: _logout);
     }
@@ -112,9 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ======================================================================
-// TAB 1 : BERANDA (Bos)
-// ======================================================================
+// BERANDA (Bos)
 class _BerandaTab extends StatelessWidget {
   final DataService ds;
   final VoidCallback onTapUser;
@@ -178,7 +177,7 @@ class _BerandaTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Avatar + Nama Pengguna (klik -> tab Akun)
+            // Header: Avatar + Nama Pengguna 
             GestureDetector(
               onTap: onTapUser,
               behavior: HitTestBehavior.opaque,
@@ -219,7 +218,7 @@ class _BerandaTab extends StatelessWidget {
             ),
             const SizedBox(height: 18),
 
-            // Kartu Nama Usaha + Kategori + Edit
+            // Nama Usaha + Kategori + Edit
             GestureDetector(
               onTap: onEditBusiness,
               child: Container(
@@ -422,7 +421,7 @@ class _BerandaTab extends StatelessWidget {
             ),
             const SizedBox(height: 22),
 
-            // Judul "Aktivitas terakhir" + "Lihat semua"
+            // Aktivitas terakhir
             Row(
               children: [
                 const Expanded(
@@ -446,7 +445,7 @@ class _BerandaTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // Isi Aktivitas terakhir: kosong vs ada data
+            // Isi Aktivitas terakhir
             if (recent == null)
               Container(
                 width: double.infinity,
@@ -604,9 +603,7 @@ class _HistoryIllustration extends StatelessWidget {
   }
 }
 
-// ======================================================================
 // BOTTOM NAVIGATION BAR (4 tab untuk Bos)
-// ======================================================================
 class _BottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onTap;

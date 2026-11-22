@@ -5,7 +5,7 @@ import '../core/format.dart';
 import '../core/ui_kit.dart';
 import '../services/data_service.dart';
 
-/// Kartu ringkasan produk (dipakai di Beranda "Aktivitas terakhir" dan "Semua Produk Kamu").
+/// Ringkasan produk 
 class ProductCard extends StatelessWidget {
   final ProductSummary product;
   final VoidCallback? onTap;

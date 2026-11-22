@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/calc.dart';
 import 'auth_service.dart';
 
-// ---------------------------------------------------------------- models
 class UnitItem {
   final String id;
   final String nama;
@@ -30,7 +29,7 @@ class MaterialItem {
   final double jumlahBeli;
   final String? unitId;
   final String unit;
-  final double penyusutan; // persen
+  final double penyusutan; 
   final int usedCount;
 
   const MaterialItem({
@@ -125,7 +124,7 @@ class ProductSummary {
   final bool pembulatan;
   final double? pembulatanStep;
   final double diskonPersen;
-  final String? diskonMode; // 'persen' | 'nominal' | null
+  final String? diskonMode;
   final double diskonNilai;
   final double sisaStok;
   final String? fotoUrl;
@@ -222,7 +221,7 @@ class ProductSummary {
     return (hargaJualPerUnit * pct / 100).clamp(0, hargaJualPerUnit);
   }
 
-  /// Harga jual per unit yang dibayar pelanggan (sudah dikurangi diskon bila aktif).
+  // Harga jual per unit 
   double get effectivePricePerUnit =>
       (hargaJualPerUnit - potonganPerUnit).clamp(0.0, double.infinity);
 
@@ -362,7 +361,7 @@ class DataFailure implements Exception {
   String toString() => 'DataFailure($code) $message';
 }
 
-// ---------------------------------------------------------------- service
+// service
 class DataService extends ChangeNotifier {
   DataService._();
   static final instance = DataService._();
@@ -612,7 +611,7 @@ class DataService extends ChangeNotifier {
 
   Future<ProductSummary> setProductDiscount({
     required String productId,
-    String? mode, // 'persen' | 'nominal' | null (hapus)
+    String? mode, 
     double nilai = 0,
     double persen = 0,
   }) async {

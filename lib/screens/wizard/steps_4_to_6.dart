@@ -9,9 +9,7 @@ import '../../services/data_service.dart';
 import 'draft.dart';
 import 'wizard_dialogs.dart';
 
-// ======================================================================
 // LANGKAH 4/6 : BIAYA OVERHEAD
-// ======================================================================
 class Step4Overhead extends StatefulWidget {
   final ProductDraft draft;
   final VoidCallback onChanged;
@@ -449,9 +447,7 @@ class _Step4OverheadState extends State<Step4Overhead> {
   }
 }
 
-// ======================================================================
 // LANGKAH 5/6 : HASIL & MARGIN
-// ======================================================================
 class Step5HasilMargin extends StatefulWidget {
   final ProductDraft draft;
   final VoidCallback onChanged;
@@ -1211,9 +1207,7 @@ class _Step5HasilMarginState extends State<Step5HasilMargin> {
   }
 }
 
-// ======================================================================
 // LANGKAH 6/6 : PAJAK & HARGA FINAL
-// ======================================================================
 class Step6PajakFinal extends StatefulWidget {
   final ProductDraft draft;
   final VoidCallback onChanged;

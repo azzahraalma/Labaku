@@ -16,7 +16,6 @@ Future<void> showLockDialog(BuildContext context) => showResultDialog(
 
 String pinFailMessage(int left) => 'PIN tidak valid, tersedia $left percobaan';
 
-/// Pesan & field yang salah dari hasil cek identitas.
 ({String message, bool user, bool biz}) identityError(LoginCheck c) {
   switch (c) {
     case LoginCheck.userInvalid:
@@ -30,9 +29,7 @@ String pinFailMessage(int left) => 'PIN tidak valid, tersedia $left percobaan';
 
 const double _toastTop = 163;
 
-// ======================================================================
-// LUPA PIN  (verifikasi kata sandi -> PIN baru)
-// ======================================================================
+// LUPA PIN  
 class ForgotPinDialog extends StatefulWidget {
   const ForgotPinDialog({super.key});
 
@@ -46,7 +43,7 @@ class _ForgotPinDialogState extends State<ForgotPinDialog> {
   final _p = TextEditingController();
   String _pin = '';
   String _pin2 = '';
-  int? _activePin; // null = tutup, 0 = Pin Baru, 1 = Konfirmasi PIN
+  int? _activePin;
   bool _eu = false, _eb = false, _ep = false, _epin = false;
   bool _busy = false;
 
@@ -234,9 +231,7 @@ class _ForgotPinDialogState extends State<ForgotPinDialog> {
   }
 }
 
-// ======================================================================
-// LUPA KATA SANDI  (verifikasi PIN -> kata sandi baru)
-// ======================================================================
+// LUPA KATA SANDI  
 class ForgotPasswordDialog extends StatefulWidget {
   const ForgotPasswordDialog({super.key});
 

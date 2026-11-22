@@ -8,6 +8,7 @@ import '../core/ui_kit.dart';
 import '../core/widgets.dart';
 import '../services/auth_service.dart';
 import '../services/data_service.dart';
+import 'terms_screen.dart';
 import 'wizard/labor_dialog.dart';
 import 'wizard/wizard_dialogs.dart';
 
@@ -24,9 +25,7 @@ Future<Uint8List?> _pickPhoto() async {
   }
 }
 
-// ======================================================================
-// TAB AKUN (Bos) - sesuai tampilan halaman akun.jpg
-// ======================================================================
+// AKUN (Bos) 
 class AkunTab extends StatelessWidget {
   final VoidCallback onLogout;
   const AkunTab({super.key, required this.onLogout});
@@ -72,7 +71,17 @@ class AkunTab extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const UsahaSayaScreen()),
           ),
         ),
-        const SizedBox(height: 110),
+        const SizedBox(height: 12),
+        _menuCard(
+          icon: Icons.description_rounded,
+          iconBg: UiColors.lavender,
+          iconFg: AppColors.blue,
+          title: 'Syarat & Ketentuan',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const TermsScreen()),
+          ),
+        ),
+        const SizedBox(height: 60),
         SizedBox(
           width: double.infinity,
           height: 46,
@@ -128,9 +137,7 @@ class AkunTab extends StatelessWidget {
       );
 }
 
-// ======================================================================
-// PROFIL SAYA
-// ======================================================================
+// PROFIL 
 class ProfilSayaScreen extends StatelessWidget {
   const ProfilSayaScreen({super.key});
 
@@ -221,9 +228,7 @@ class ProfilSayaScreen extends StatelessWidget {
   }
 }
 
-// ======================================================================
 // UBAH PROFIL (Bos)
-// ======================================================================
 class UbahProfilScreen extends StatefulWidget {
   const UbahProfilScreen({super.key});
 
@@ -281,7 +286,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
   }
 
   Future<void> _changePin() async {
-    // 1. Verifikasi PIN lama memakai keypad PIN kustom
+    // 1. Verifikasi PIN lama 
     final verified = await showPinSheet(
       context,
       title: 'Masukkan PIN',
@@ -296,7 +301,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
       },
     );
     if (!verified || !mounted) return;
-    // 2. Dialog Ubah PIN (juga pakai keypad PIN kustom)
+    // 2. Dialog Ubah PIN 
     await showAppDialog<void>(
       context,
       (_) => _ChangePinDialog(
@@ -443,9 +448,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
   }
 }
 
-// ======================================================================
-// USAHA SAYA
-// ======================================================================
+// USAHA 
 class UsahaSayaScreen extends StatelessWidget {
   const UsahaSayaScreen({super.key});
 
@@ -595,9 +598,7 @@ class UsahaSayaScreen extends StatelessWidget {
       );
 }
 
-// ======================================================================
 // DAFTAR KARYAWAN & UBAH AKUN KARYAWAN
-// ======================================================================
 class KaryawanListScreen extends StatelessWidget {
   const KaryawanListScreen({super.key});
 
@@ -1204,9 +1205,7 @@ class _UbahAkunKaryawanScreenState extends State<UbahAkunKaryawanScreen> {
   }
 }
 
-// ======================================================================
-// Dialogs: Ubah Sandi, Ubah PIN (pakai keypad kustom), Ubah Detail Usaha
-// ======================================================================
+// Dialogs: Ubah Sandi, Ubah PIN (pakai keypad kustom), Ubah Detail Usaha.
 class _ChangePasswordDialog extends StatefulWidget {
   final Future<void> Function(String newPassword) onSubmit;
   const _ChangePasswordDialog({required this.onSubmit});
@@ -1536,9 +1535,7 @@ class _EditBusinessDialogState extends State<_EditBusinessDialog> {
   }
 }
 
-// ======================================================================
 // Helper widgets
-// ======================================================================
 class _SubPage extends StatelessWidget {
   final String title;
   final Widget body;

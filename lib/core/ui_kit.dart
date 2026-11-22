@@ -318,8 +318,7 @@ class DecimalFormatter extends TextInputFormatter {
   }
 }
 
-// ---------------------------------------------------------------- fields
-/// Kolom input outline dengan label mengambang di garis (opsional), ikon & suffix.
+/// Input.
 class OutField extends StatelessWidget {
   final TextEditingController controller;
   final String? hint;

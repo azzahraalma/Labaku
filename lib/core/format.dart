@@ -1,4 +1,3 @@
-/// Format angka & tanggal gaya Indonesia (tanpa paket intl agar ringan).
 class Fmt {
   static String _group(int n) {
     final s = n.abs().toString();

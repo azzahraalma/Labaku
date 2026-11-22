@@ -72,9 +72,7 @@ class DialogButtons extends StatelessWidget {
   }
 }
 
-// ======================================================================
 // Pilih Kategori  (+ Kategori Lain)
-// ======================================================================
 IconData categoryIcon(String name) {
   switch (name.toLowerCase()) {
     case 'makanan':
@@ -250,9 +248,7 @@ class _CustomCategoryDialogPState extends State<CustomCategoryDialogP> {
   }
 }
 
-// ======================================================================
 // Satuan Lain
-// ======================================================================
 class UnitAddDialog extends StatefulWidget {
   const UnitAddDialog({super.key});
 
@@ -322,9 +318,7 @@ class _UnitAddDialogState extends State<UnitAddDialog> {
   }
 }
 
-// ======================================================================
 // Tambah Item Overhead
-// ======================================================================
 class OverheadItemDialog extends StatefulWidget {
   final OverheadItem? initial;
   const OverheadItemDialog({super.key, this.initial});
@@ -401,7 +395,7 @@ class _OverheadItemDialogState extends State<OverheadItemDialog> {
   }
 }
 
-/// Dialog edit jumlah untuk bahan yang sudah masuk resep (dipakai juga oleh pensil).
+/// edit bahan
 class QtyDialog extends StatefulWidget {
   final MaterialItem material;
   final double? initial;

@@ -11,8 +11,6 @@ import 'wizard_dialogs.dart';
 
 enum _Stage { stock, create, qty }
 
-/// Dialog "Pilih Bahan": Pilih Stok / Tambah Baru / Atur Jumlah.
-/// Mengembalikan [RecipeLine] saat bahan ditambahkan ke resep.
 class MaterialDialog extends StatefulWidget {
   final Set<String> excludeIds;
   final bool startOnCreate;

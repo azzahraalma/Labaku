@@ -7,7 +7,7 @@ import '../core/ui_kit.dart';
 import '../core/widgets.dart';
 import '../services/data_service.dart';
 
-/// Halaman "Simulasi Diskon" (dibuka dari tombol "Hitung Diskon" di Detail Produk).
+/// Simulasi Diskon
 class DiscountSimScreen extends StatefulWidget {
   final ProductSummary product;
   const DiscountSimScreen({super.key, required this.product});
@@ -305,7 +305,7 @@ class _DiscountSimScreenState extends State<DiscountSimScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Toggle Persentase | Nominal
+                    // Toggle Persentase 
                     Container(
                       height: 40,
                       decoration: BoxDecoration(

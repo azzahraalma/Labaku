@@ -9,7 +9,7 @@ import '../services/data_service.dart';
 import 'product_card.dart';
 import 'product_detail_screen.dart';
 
-/// Halaman "Semua Produk Kamu" (bisa dibuka dari "Lihat semua" di Beranda).
+/// Semua Produk
 class AllProductsScreen extends StatefulWidget {
   const AllProductsScreen({super.key});
 
