@@ -34,8 +34,13 @@ class _Step4OverheadState extends State<Step4Overhead> {
 
   Future<void> _addItem() async {
     final it = await showAppDialog<OverheadItem>(
-        context, (_) => const OverheadItemDialog(),
-        dismissible: true);
+      context,
+      (_) => OverheadItemDialog(
+        productQty: widget.draft.jumlah,
+        productUnit: widget.draft.unit?.nama ?? 'pcs',
+      ),
+      dismissible: true,
+    );
     if (it != null) {
       setState(() => widget.draft.overheads.add(it));
       widget.onChanged();
@@ -44,8 +49,14 @@ class _Step4OverheadState extends State<Step4Overhead> {
 
   Future<void> _editItem(int i) async {
     final it = await showAppDialog<OverheadItem>(
-        context, (_) => OverheadItemDialog(initial: widget.draft.overheads[i]),
-        dismissible: true);
+      context,
+      (_) => OverheadItemDialog(
+        initial: widget.draft.overheads[i],
+        productQty: widget.draft.jumlah,
+        productUnit: widget.draft.unit?.nama ?? 'pcs',
+      ),
+      dismissible: true,
+    );
     if (it != null) {
       setState(() => widget.draft.overheads[i] = it);
       widget.onChanged();

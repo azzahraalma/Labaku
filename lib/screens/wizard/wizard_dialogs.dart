@@ -318,10 +318,17 @@ class _UnitAddDialogState extends State<UnitAddDialog> {
   }
 }
 
-// Tambah Item Overhead
+// Tambah Item Overhead (Biaya Rutin & Penyusutan Alat/Mesin)
 class OverheadItemDialog extends StatefulWidget {
   final OverheadItem? initial;
-  const OverheadItemDialog({super.key, this.initial});
+  final double productQty;
+  final String productUnit;
+  const OverheadItemDialog({
+    super.key,
+    this.initial,
+    this.productQty = 1,
+    this.productUnit = 'pcs',
+  });
 
   @override
   State<OverheadItemDialog> createState() => _OverheadItemDialogState();
@@ -331,65 +338,349 @@ class _OverheadItemDialogState extends State<OverheadItemDialog> {
   late final _n = TextEditingController(text: widget.initial?.nama);
   late final _h = TextEditingController(
       text: widget.initial == null ? '' : Fmt.number(widget.initial!.harga));
+  final _umur = TextEditingController();
+  bool _isAsset = false; // false = Biaya Rutin, true = Alat/Mesin (Penyusutan)
+  String _rutinUnit = 'hari'; // 'unit' | 'hari' | 'minggu' | 'bulan' | 'tahun'
+  String _umurUnit = 'bulan'; // 'unit' | 'hari' | 'bulan' | 'tahun'
 
   @override
   void dispose() {
     _n.dispose();
     _h.dispose();
+    _umur.dispose();
     super.dispose();
   }
 
-  bool get _ok => _n.text.trim().isNotEmpty && Fmt.parse(_h.text) > 0;
+  double get _qty => widget.productQty > 0 ? widget.productQty : 1;
+  String get _unitLabel =>
+      widget.productUnit.trim().isEmpty ? 'pcs' : widget.productUnit.trim();
+
+  double get _umurValue => Fmt.parse(_umur.text);
+
+  double get _biayaFinal {
+    final harga = Fmt.parse(_h.text);
+    if (harga <= 0) return 0;
+    if (!_isAsset) {
+      switch (_rutinUnit) {
+        case 'unit':
+          return (harga * _qty).ceilToDouble();
+        case 'minggu':
+          return (harga / 7).ceilToDouble();
+        case 'bulan':
+          return (harga / 30).ceilToDouble();
+        case 'tahun':
+          return (harga / 365).ceilToDouble();
+        default: // hari (langsung untuk produksi ini)
+          return harga;
+      }
+    }
+    final u = _umurValue;
+    if (u <= 0) return 0;
+    switch (_umurUnit) {
+      case 'unit':
+        return ((harga / u) * _qty).ceilToDouble();
+      case 'tahun':
+        return (harga / (u * 365)).ceilToDouble();
+      case 'bulan':
+        return (harga / (u * 30)).ceilToDouble();
+      default: // hari
+        return (harga / u).ceilToDouble();
+    }
+  }
+
+  bool get _ok {
+    if (_n.text.trim().isEmpty) return false;
+    if (!_isAsset) return Fmt.parse(_h.text) > 0;
+    return Fmt.parse(_h.text) > 0 && _umurValue > 0;
+  }
 
   void _save() {
     if (!_ok) {
       warnDialog(context);
       return;
     }
-    closeDialog(context, OverheadItem(_n.text.trim(), Fmt.parse(_h.text)));
+    final rawName = _n.text.trim();
+    final name = _isAsset && !rawName.toLowerCase().contains('penyusutan')
+        ? 'Penyusutan $rawName'
+        : rawName;
+    closeDialog(context, OverheadItem(name, _biayaFinal));
+  }
+
+  Widget _modePill(bool asset, String label) {
+    final sel = _isAsset == asset;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _isAsset = asset),
+        child: Container(
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: sel ? AppColors.blue : UiColors.blueTint,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: sel ? AppColors.white : AppColors.blue,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _choiceChip(String label, bool sel, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: sel ? AppColors.blue : AppColors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.blue),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: sel ? AppColors.white : AppColors.blue,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final unitName = _unitLabel;
     return AppDialogCard(
-      padding: const EdgeInsets.fromLTRB(26, 22, 26, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DialogTitleRow(
-              title: 'Tambah Item', onClose: () => closeDialog(context)),
-          const SizedBox(height: 18),
-          OutField(
-            controller: _n,
-            floatLabel: 'Nama Item Overhead',
-            icon: Icons.inventory_2_rounded,
-            hint: 'Contoh: Listrik',
-            height: 50,
-            borderColor: AppColors.grey,
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 18),
-          OutField(
-            controller: _h,
-            prefix: const Text('Rp',
-                style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.blue)),
-            hint: 'Jumlah Biaya',
-            height: 50,
-            borderColor: AppColors.grey,
-            keyboard: TextInputType.number,
-            formatters: [ThousandsFormatter()],
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 22),
-          DialogButtons(
-            ready: _ok,
-            onCancel: () => closeDialog(context),
-            onConfirm: _save,
-            alignment: MainAxisAlignment.start,
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 22),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DialogTitleRow(
+                title: 'Tambah Item', onClose: () => closeDialog(context)),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                _modePill(false, 'Biaya Rutin'),
+                const SizedBox(width: 8),
+                _modePill(true, 'Alat / Mesin'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutField(
+              controller: _n,
+              floatLabel:
+                  _isAsset ? 'Nama Alat / Mesin' : 'Nama Item Overhead',
+              icon: _isAsset
+                  ? Icons.precision_manufacturing_outlined
+                  : Icons.inventory_2_rounded,
+              hint: _isAsset ? 'Contoh: Mesin Press Es Teh' : 'Contoh: Listrik',
+              height: 50,
+              borderColor: AppColors.grey,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 16),
+            OutField(
+              controller: _h,
+              floatLabel: _isAsset ? 'Harga Beli Alat' : null,
+              prefix: const Text('Rp',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.blue)),
+              hint: _isAsset ? 'Contoh: 700.000' : 'Jumlah Biaya',
+              height: 50,
+              borderColor: AppColors.grey,
+              keyboard: TextInputType.number,
+              formatters: [ThousandsFormatter()],
+              onChanged: (_) => setState(() {}),
+            ),
+            if (!_isAsset) ...[
+              const SizedBox(height: 10),
+              const Text('Satuan Biaya:',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _choiceChip('per $unitName', _rutinUnit == 'unit',
+                      () => setState(() => _rutinUnit = 'unit')),
+                  _choiceChip('per Hari', _rutinUnit == 'hari',
+                      () => setState(() => _rutinUnit = 'hari')),
+                  _choiceChip('per Minggu', _rutinUnit == 'minggu',
+                      () => setState(() => _rutinUnit = 'minggu')),
+                  _choiceChip('per Bulan', _rutinUnit == 'bulan',
+                      () => setState(() => _rutinUnit = 'bulan')),
+                  _choiceChip('per Tahun', _rutinUnit == 'tahun',
+                      () => setState(() => _rutinUnit = 'tahun')),
+                ],
+              ),
+              if (Fmt.parse(_h.text) > 0) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: UiColors.blueTint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _rutinUnit == 'unit'
+                              ? 'Total (${Fmt.plain(_qty)} $unitName):'
+                              : 'Biaya masuk modal / hari:',
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.black),
+                        ),
+                      ),
+                      Text(
+                        Fmt.rp(_biayaFinal),
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ] else ...[
+              const SizedBox(height: 16),
+              OutField(
+                controller: _umur,
+                floatLabel: _umurUnit == 'unit'
+                    ? 'Perkiraan Kapasitas Pakai ($unitName)'
+                    : 'Perkiraan Lama Pakai',
+                icon: Icons.schedule_rounded,
+                hint: _umurUnit == 'unit'
+                    ? 'Contoh: 10000'
+                    : _umurUnit == 'tahun'
+                        ? 'Contoh: 2'
+                        : _umurUnit == 'bulan'
+                            ? 'Contoh: 24'
+                            : 'Contoh: 700',
+                height: 50,
+                borderColor: AppColors.grey,
+                keyboard: const TextInputType.numberWithOptions(decimal: true),
+                formatters: [DecimalFormatter()],
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _choiceChip(unitName, _umurUnit == 'unit',
+                      () => setState(() => _umurUnit = 'unit')),
+                  _choiceChip('Hari', _umurUnit == 'hari',
+                      () => setState(() => _umurUnit = 'hari')),
+                  _choiceChip('Bulan', _umurUnit == 'bulan',
+                      () => setState(() => _umurUnit = 'bulan')),
+                  _choiceChip('Tahun', _umurUnit == 'tahun',
+                      () => setState(() => _umurUnit = 'tahun')),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: UiColors.blueTint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _umurUnit == 'unit'
+                                ? 'Penyusutan (${Fmt.plain(_qty)} $unitName):'
+                                : 'Biaya penyusutan / hari:',
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.black),
+                          ),
+                        ),
+                        Text(
+                          Fmt.rp(_biayaFinal),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(top: 1),
+                          child: Icon(Icons.info_rounded,
+                              size: 14, color: AppColors.blue),
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Alat sekali beli dipakai berkali-kali, jadi yang masuk ke modal hanya biaya penyusutannya agar tidak bikin rugi.',
+                            style: TextStyle(
+                                fontSize: 11,
+                                height: 1.35,
+                                color: UiColors.textMute),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    text: 'Batal',
+                    height: 40,
+                    fontSize: 15,
+                    style: BtnStyle.outline,
+                    onTap: () => closeDialog(context),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppButton(
+                    text: 'Simpan',
+                    height: 40,
+                    fontSize: 15,
+                    style: _ok ? BtnStyle.primary : BtnStyle.disabledSoft,
+                    onTap: _save,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
